@@ -355,6 +355,91 @@ export async function getDashboardStats(empresaId: number): Promise<DashboardSta
   };
 }
 
+// ============ CHART DATA FUNCTIONS ============
+
+const CHART_COLORS = ['#d4a853', '#8b2635', '#6d4f28', '#4a7c59', '#c4a77d'];
+
+export async function getRevenueChartData(empresaId: number): Promise<{ mes: string; receita: number; pagamentos: number }[]> {
+  // Get last 6 months of data
+  const months: { mes: string; receita: number; pagamentos: number }[] = [];
+  const now = new Date();
+
+  for (let i = 5; i >= 0; i--) {
+    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const monthName = date.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '');
+    const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1).toISOString();
+    const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59).toISOString();
+
+    // Get revenue from delivered orders
+    const { data: orders } = await supabase
+      .from('encomendas')
+      .select('valor_total')
+      .eq('empresa_id', empresaId)
+      .eq('status', 'entregue')
+      .gte('data_entrega', startOfMonth)
+      .lte('data_entrega', endOfMonth);
+
+    const receita = orders?.reduce((sum, o) => sum + (o.valor_total || 0), 0) || 0;
+
+    // Get payments made
+    const { data: payments } = await supabase
+      .from('historico_pagamentos')
+      .select('valor, funcionario:funcionarios!inner(empresa_id)')
+      .eq('funcionario.empresa_id', empresaId)
+      .gte('data_pagamento', startOfMonth)
+      .lte('data_pagamento', endOfMonth);
+
+    const pagamentos = payments?.reduce((sum, p) => sum + (p.valor || 0), 0) || 0;
+
+    months.push({
+      mes: monthName.charAt(0).toUpperCase() + monthName.slice(1),
+      receita,
+      pagamentos,
+    });
+  }
+
+  return months;
+}
+
+export async function getCategoryDistribution(empresaId: number): Promise<{ name: string; value: number; fill: string }[]> {
+  const { data: produtos, error } = await supabase
+    .from('produtos_empresa')
+    .select(`
+      estoque_atual,
+      preco_venda,
+      produto_referencia:produtos_referencia(categoria)
+    `)
+    .eq('empresa_id', empresaId)
+    .eq('ativo', true);
+
+  if (error) throw error;
+
+  // Group by category and calculate total value
+  const categoryValues: Record<string, number> = {};
+  let totalValue = 0;
+
+  produtos?.forEach((p) => {
+    const ref = p.produto_referencia as { categoria?: string } | { categoria?: string }[] | null;
+    const categoria = ref ? (Array.isArray(ref) ? ref[0]?.categoria : ref.categoria) : 'Outros';
+    const value = (p.estoque_atual || 0) * (p.preco_venda || 0);
+
+    categoryValues[categoria || 'Outros'] = (categoryValues[categoria || 'Outros'] || 0) + value;
+    totalValue += value;
+  });
+
+  // Convert to percentages
+  const result = Object.entries(categoryValues)
+    .map(([name, value], index) => ({
+      name,
+      value: totalValue > 0 ? Math.round((value / totalValue) * 100) : 0,
+      fill: CHART_COLORS[index % CHART_COLORS.length],
+    }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 5);
+
+  return result;
+}
+
 // ============ UTILITY FUNCTIONS ============
 
 export async function getCategorias(empresaId: number): Promise<string[]> {

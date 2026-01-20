@@ -62,7 +62,7 @@ export function Dashboard() {
 
         setRecentOrders(orders.slice(0, 5));
         setTopEmployees(
-          employees.sort((a, b) => b.saldo - a.saldo).slice(0, 5)
+          employees.sort((a: Funcionario, b: Funcionario) => b.saldo - a.saldo).slice(0, 5)
         );
         setRevenueData(revenue);
         setCategoryData(categories);
@@ -212,7 +212,7 @@ export function Dashboard() {
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={categoryData}
+                      data={categoryData as Array<{ name: string; value: number; fill: string; [key: string]: unknown }>}
                       cx="50%"
                       cy="50%"
                       innerRadius={50}
