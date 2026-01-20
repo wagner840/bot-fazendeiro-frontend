@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
   Users,
@@ -52,7 +52,13 @@ function NavItem({ to, icon, label, collapsed }: NavItemProps) {
 }
 
 export function Sidebar() {
-  const { selectedEmpresa, sidebarCollapsed, setSidebarCollapsed } = useApp();
+  const { 
+    selectedEmpresa, 
+    sidebarCollapsed, 
+    setSidebarCollapsed,
+    mobileMenuOpen,
+    setMobileMenuOpen
+  } = useApp();
 
   const businessIcon = selectedEmpresa?.tipo_empresa?.codigo
     ? BUSINESS_ICONS[selectedEmpresa.tipo_empresa.codigo] || '🏢'
@@ -67,108 +73,135 @@ export function Sidebar() {
     { to: '/configuracoes', icon: <Settings size={20} />, label: 'Configurações' },
   ];
 
-  return (
-    <motion.aside
-      initial={false}
-      animate={{ width: sidebarCollapsed ? 72 : 256 }}
-      transition={{ duration: 0.3, ease: 'easeInOut' }}
-      className="h-screen flex flex-col bg-leather-900/95 border-r border-leather-700/50 relative"
-    >
-      {/* Logo / Brand */}
-      <div className="p-4 border-b border-leather-700/50">
-        <div className={cn(
-          'flex items-center gap-3',
-          sidebarCollapsed && 'justify-center'
-        )}>
-          <div className="w-10 h-10 rounded-western bg-gradient-to-br from-gold-500 to-whiskey-600 flex items-center justify-center shadow-gold-glow">
-            <Wheat className="w-6 h-6 text-leather-950" />
-          </div>
-          {!sidebarCollapsed && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="overflow-hidden"
-            >
-              <h1 className="font-display text-lg text-gold-500 leading-tight">
-                Fazendeiro
-              </h1>
-              <p className="text-xs text-parchment-500 font-body">
-                Painel Administrativo
-              </p>
-            </motion.div>
-          )}
-        </div>
-      </div>
+  // Close mobile menu on navigation
+  const handleNavClick = () => {
+    if (window.innerWidth < 768) {
+      setMobileMenuOpen(false);
+    }
+  };
 
-      {/* Company Selector */}
-      {selectedEmpresa && (
-        <div className={cn(
-          'p-4 border-b border-leather-700/50',
-          sidebarCollapsed && 'p-2'
-        )}>
+  return (
+    <>
+      {/* Mobile Backdrop */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setMobileMenuOpen(false)}
+            className="md:hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-40"
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Sidebar Container */}
+      <motion.aside
+        initial={false}
+        animate={{ 
+          width: (sidebarCollapsed && !mobileMenuOpen) ? 72 : 256,
+          x: mobileMenuOpen ? 0 : 0 // We handle mobile hide via class/CSS transform now, resetting x for Framer safety
+        }}
+        className={cn(
+          "fixed md:static inset-y-0 left-0 z-50 flex flex-col bg-leather-900/95 border-r border-leather-700/50 transition-transform duration-300 md:translate-x-0 h-screen",
+          !mobileMenuOpen && "-translate-x-full md:translate-x-0"
+        )}
+      >
+        {/* Logo / Brand */}
+        <div className="p-4 border-b border-leather-700/50 flex items-center justify-between">
           <div className={cn(
-            'flex items-center gap-3 p-3 rounded-western bg-leather-800/50',
-            sidebarCollapsed && 'justify-center p-2'
+            'flex items-center gap-3',
+            (sidebarCollapsed && !mobileMenuOpen) && 'justify-center w-full'
           )}>
-            <span className="text-2xl">{businessIcon}</span>
-            {!sidebarCollapsed && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="overflow-hidden flex-1 min-w-0"
-              >
-                <p className="font-heading text-sm text-parchment-100 truncate">
-                  {selectedEmpresa.nome}
+            <div className="w-10 h-10 rounded-western bg-gradient-to-br from-gold-500 to-whiskey-600 flex items-center justify-center shadow-gold-glow shrink-0">
+              <Wheat className="w-6 h-6 text-leather-950" />
+            </div>
+            {(!sidebarCollapsed || mobileMenuOpen) && (
+              <div className="overflow-hidden">
+                <h1 className="font-display text-lg text-gold-500 leading-tight">
+                  Fazendeiro
+                </h1>
+                <p className="text-xs text-parchment-500 font-body">
+                  Painel Administrativo
                 </p>
-                <p className="text-xs text-parchment-500 truncate">
-                  {selectedEmpresa.tipo_empresa?.nome}
-                </p>
-              </motion.div>
+              </div>
             )}
           </div>
+          
+          {/* Mobile Close Button */}
+          <button 
+            className="md:hidden text-parchment-400 hover:text-parchment-200"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <ChevronLeft size={24} />
+          </button>
         </div>
-      )}
 
-      {/* Navigation */}
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {navItems.map((item) => (
-          <NavItem
-            key={item.to}
-            to={item.to}
-            icon={item.icon}
-            label={item.label}
-            collapsed={sidebarCollapsed}
-          />
-        ))}
-      </nav>
-
-      {/* Collapse Toggle */}
-      <button
-        onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-        className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-leather-800 border border-leather-600/50 flex items-center justify-center hover:bg-leather-700 transition-colors shadow-western"
-      >
-        {sidebarCollapsed ? (
-          <ChevronRight size={14} className="text-gold-500" />
-        ) : (
-          <ChevronLeft size={14} className="text-gold-500" />
+        {/* Company Selector */}
+        {selectedEmpresa && (
+          <div className={cn(
+            'p-4 border-b border-leather-700/50',
+            (sidebarCollapsed && !mobileMenuOpen) && 'p-2'
+          )}>
+            <div className={cn(
+              'flex items-center gap-3 p-3 rounded-western bg-leather-800/50',
+              (sidebarCollapsed && !mobileMenuOpen) && 'justify-center p-2'
+            )}>
+              <span className="text-2xl">{businessIcon}</span>
+              {(!sidebarCollapsed || mobileMenuOpen) && (
+                <div className="overflow-hidden flex-1 min-w-0">
+                  <p className="font-heading text-sm text-parchment-100 truncate">
+                    {selectedEmpresa.nome}
+                  </p>
+                  <p className="text-xs text-parchment-500 truncate">
+                    {selectedEmpresa.tipo_empresa?.nome}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
         )}
-      </button>
 
-      {/* Footer */}
-      <div className={cn(
-        'p-4 border-t border-leather-700/50',
-        sidebarCollapsed && 'p-2'
-      )}>
-        {!sidebarCollapsed ? (
-          <p className="text-xs text-parchment-600 text-center font-body">
-            Bot Fazendeiro v2.1
-          </p>
-        ) : (
-          <p className="text-xs text-parchment-600 text-center">v2.1</p>
-        )}
-      </div>
-    </motion.aside>
+        {/* Navigation */}
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+          {navItems.map((item) => (
+            <div key={item.to} onClick={handleNavClick}>
+              <NavItem
+                to={item.to}
+                icon={item.icon}
+                label={item.label}
+                collapsed={sidebarCollapsed && !mobileMenuOpen}
+              />
+            </div>
+          ))}
+        </nav>
+
+        {/* Collapse Toggle (Desktop Only) */}
+        <button
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          className="hidden md:flex absolute -right-3 top-20 w-6 h-6 rounded-full bg-leather-800 border border-leather-600/50 items-center justify-center hover:bg-leather-700 transition-colors shadow-western"
+        >
+          {sidebarCollapsed ? (
+            <ChevronRight size={14} className="text-gold-500" />
+          ) : (
+            <ChevronLeft size={14} className="text-gold-500" />
+          )}
+        </button>
+
+        {/* Footer */}
+        <div className={cn(
+          'p-4 border-t border-leather-700/50',
+          (sidebarCollapsed && !mobileMenuOpen) && 'p-2'
+        )}>
+          {(!sidebarCollapsed || mobileMenuOpen) ? (
+            <p className="text-xs text-parchment-600 text-center font-body">
+              Bot Fazendeiro v2.1
+            </p>
+          ) : (
+            <p className="text-xs text-parchment-600 text-center">v2.1</p>
+          )}
+        </div>
+      </motion.aside>
+    </>
   );
 }

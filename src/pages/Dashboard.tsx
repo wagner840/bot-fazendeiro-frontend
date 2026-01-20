@@ -23,8 +23,8 @@ import {
 } from 'recharts';
 import { useApp } from '../context/AppContext';
 import { Card, CardHeader, CardContent, StatCard, StatusStamp, Avatar, Progress } from '../components/ui';
-import { formatCurrency, formatDate, type Encomenda, type Funcionario } from '../lib/types';
-import { getEncomendas, getFuncionarios } from '../lib/supabase';
+import { formatCurrency, formatDate, type Encomenda, type Funcionario, type RevenueChartData, type ChartDataPoint } from '../lib/types';
+import { getEncomendas, getFuncionarios, getRevenueChartData, getCategoryDistribution } from '../lib/supabase';
 
 const container = {
   hidden: { opacity: 0 },
@@ -39,27 +39,12 @@ const item = {
   show: { opacity: 1, y: 0 },
 };
 
-// Mock chart data
-const revenueData = [
-  { name: 'Jan', receita: 4500, pagamentos: 1200 },
-  { name: 'Fev', receita: 5200, pagamentos: 1800 },
-  { name: 'Mar', receita: 4800, pagamentos: 1500 },
-  { name: 'Abr', receita: 6100, pagamentos: 2200 },
-  { name: 'Mai', receita: 5800, pagamentos: 1900 },
-  { name: 'Jun', receita: 7200, pagamentos: 2500 },
-];
-
-const categoryData = [
-  { name: 'Grãos', value: 35, color: '#d4a853' },
-  { name: 'Legumes', value: 25, color: '#a67c3d' },
-  { name: 'Frutas', value: 20, color: '#8b2635' },
-  { name: 'Outros', value: 20, color: '#6d4f28' },
-];
-
 export function Dashboard() {
   const { selectedEmpresa, stats } = useApp();
   const [recentOrders, setRecentOrders] = useState<Encomenda[]>([]);
   const [topEmployees, setTopEmployees] = useState<Funcionario[]>([]);
+  const [revenueData, setRevenueData] = useState<RevenueChartData[]>([]);
+  const [categoryData, setCategoryData] = useState<ChartDataPoint[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -68,15 +53,19 @@ export function Dashboard() {
 
       try {
         setIsLoading(true);
-        const [orders, employees] = await Promise.all([
+        const [orders, employees, revenue, categories] = await Promise.all([
           getEncomendas(selectedEmpresa.id),
           getFuncionarios(selectedEmpresa.id),
+          getRevenueChartData(selectedEmpresa.id),
+          getCategoryDistribution(selectedEmpresa.id),
         ]);
 
         setRecentOrders(orders.slice(0, 5));
         setTopEmployees(
           employees.sort((a, b) => b.saldo - a.saldo).slice(0, 5)
         );
+        setRevenueData(revenue);
+        setCategoryData(categories);
       } catch (error) {
         console.error('Error loading dashboard data:', error);
       } finally {
@@ -168,22 +157,24 @@ export function Dashboard() {
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(109, 79, 40, 0.3)" />
                     <XAxis
-                      dataKey="name"
+                      dataKey="mes"
                       tick={{ fill: '#f5e6d3', fontSize: 12 }}
                       axisLine={{ stroke: '#6d4f28' }}
                     />
                     <YAxis
                       tick={{ fill: '#f5e6d3', fontSize: 12 }}
                       axisLine={{ stroke: '#6d4f28' }}
-                      tickFormatter={(value) => `R$${value / 1000}k`}
+                      tickFormatter={(value) => `R$${(Number(value) || 0) / 1000}k`}
                     />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: '#2d1b0e',
                         border: '1px solid #6d4f28',
                         borderRadius: '2px',
+                        color: '#f5e6d3',
                       }}
                       labelStyle={{ color: '#d4a853' }}
+                      formatter={(value: any) => [formatCurrency(Number(value) || 0), 'Receita/Pagamentos']}
                     />
                     <Area
                       type="monotone"
@@ -230,7 +221,7 @@ export function Dashboard() {
                       dataKey="value"
                     >
                       {categoryData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
                       ))}
                     </Pie>
                     <Tooltip
@@ -239,6 +230,7 @@ export function Dashboard() {
                         border: '1px solid #6d4f28',
                         borderRadius: '2px',
                       }}
+                      formatter={(value: any) => [`${value}%`, 'Distribuição']}
                     />
                   </PieChart>
                 </ResponsiveContainer>
@@ -249,7 +241,7 @@ export function Dashboard() {
                     <div className="flex items-center gap-2">
                       <div
                         className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: cat.color }}
+                        style={{ backgroundColor: cat.fill }}
                       />
                       <span className="text-sm text-parchment-300">{cat.name}</span>
                     </div>
@@ -430,7 +422,7 @@ export function Dashboard() {
               </div>
             </div>
 
-            <div className="h-12 w-px bg-leather-700/50" />
+            <div className="h-12 w-px bg-leather-700/50 hidden md:block" />
 
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-western bg-green-900/30">
@@ -446,7 +438,7 @@ export function Dashboard() {
               </div>
             </div>
 
-            <div className="h-12 w-px bg-leather-700/50" />
+            <div className="h-12 w-px bg-leather-700/50 hidden md:block" />
 
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-western bg-rust-900/30">

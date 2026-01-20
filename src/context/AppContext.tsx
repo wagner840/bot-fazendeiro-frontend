@@ -24,6 +24,8 @@ interface AppContextType {
   // UI State
   sidebarCollapsed: boolean;
   setSidebarCollapsed: (collapsed: boolean) => void;
+  mobileMenuOpen: boolean;
+  setMobileMenuOpen: (open: boolean) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -43,6 +45,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // UI
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Load empresas
   const loadEmpresas = useCallback(async () => {
@@ -123,6 +126,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     removeToast,
     sidebarCollapsed,
     setSidebarCollapsed,
+    mobileMenuOpen,
+    setMobileMenuOpen,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
