@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search,
@@ -7,8 +8,13 @@ import {
   ChevronDown,
   Building2,
   Check,
+  LogOut,
+  User,
+  Shield,
+  Settings,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { useAuth } from '../../context/AuthContext';
 import { cn } from '../../lib/utils';
 import { BUSINESS_ICONS } from '../../lib/types';
 
@@ -21,16 +27,32 @@ export function Header() {
     isLoadingStats,
     setMobileMenuOpen,
   } = useApp();
+  const { user, signOut, isSuperadmin, isAdmin } = useAuth();
+  const navigate = useNavigate();
 
   const [showEmpresaDropdown, setShowEmpresaDropdown] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   const handleRefresh = () => {
     loadStats();
   };
 
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/login', { replace: true });
+  };
+
+  const getRoleBadge = () => {
+    if (isSuperadmin) return { label: 'Superadmin', color: 'text-purple-400 bg-purple-900/30' };
+    if (isAdmin) return { label: 'Admin', color: 'text-gold-400 bg-gold-900/30' };
+    return { label: 'Funcionário', color: 'text-parchment-400 bg-leather-800/30' };
+  };
+
+  const roleBadge = getRoleBadge();
+
   return (
-    <header className="h-16 border-b border-leather-700/50 bg-leather-900/50 backdrop-blur-sm px-4 md:px-6 flex items-center justify-between gap-4">
+    <header className="h-16 border-b border-leather-700/50 bg-leather-900/50 backdrop-blur-sm px-4 md:px-6 flex items-center justify-between gap-4 relative z-50">
       
       {/* Mobile Menu Toggle - Visible only on mobile */}
       <button 
@@ -87,7 +109,7 @@ export function Header() {
         </button>
 
         {/* Company Selector */}
-        <div className="relative">
+        <div className={cn("relative", showEmpresaDropdown && "z-[10000]")}>
           <button
             onClick={() => setShowEmpresaDropdown(!showEmpresaDropdown)}
             className="flex items-center gap-2 md:gap-3 px-2 md:px-4 py-2 rounded-western bg-leather-800/50 hover:bg-leather-800 transition-colors border border-leather-700/50"
@@ -110,7 +132,7 @@ export function Header() {
               <>
                 {/* Backdrop */}
                 <div
-                  className="fixed inset-0 z-40"
+                  className="fixed inset-0 z-[9998]"
                   onClick={() => setShowEmpresaDropdown(false)}
                 />
 
@@ -120,7 +142,7 @@ export function Header() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute right-0 top-full mt-2 w-72 z-50 western-card py-2 max-h-80 overflow-y-auto"
+                  className="absolute right-0 top-full mt-2 w-72 z-[9999] western-card py-2 max-h-80 overflow-y-auto"
                 >
                   <div className="px-4 py-2 border-b border-leather-700/50">
                     <p className="text-xs text-parchment-500 uppercase tracking-wider font-heading">
@@ -169,6 +191,117 @@ export function Header() {
                       })}
                     </div>
                   )}
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* User Menu */}
+        <div className={cn("relative", showUserMenu && "z-[10000]")}>
+          <button
+            onClick={() => setShowUserMenu(!showUserMenu)}
+            className="flex items-center gap-2 p-1 rounded-western hover:bg-leather-800/50 transition-colors"
+          >
+            {user?.user_metadata?.avatar_url ? (
+              <img
+                src={user.user_metadata.avatar_url}
+                alt="Avatar"
+                className="w-8 h-8 rounded-full border-2 border-leather-600"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-leather-700 flex items-center justify-center">
+                <User size={16} className="text-parchment-400" />
+              </div>
+            )}
+            <ChevronDown
+              size={14}
+              className={cn(
+                'text-parchment-400 transition-transform duration-200 hidden sm:block',
+                showUserMenu && 'rotate-180'
+              )}
+            />
+          </button>
+
+          <AnimatePresence>
+            {showUserMenu && (
+              <>
+                <div
+                  className="fixed inset-0 z-[9998]"
+                  onClick={() => setShowUserMenu(false)}
+                />
+
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 top-full mt-2 w-64 z-[9999] western-card py-2"
+                >
+                  {/* User Info */}
+                  <div className="px-4 py-3 border-b border-leather-700/50">
+                    <div className="flex items-center gap-3">
+                      {user?.user_metadata?.avatar_url ? (
+                        <img
+                          src={user.user_metadata.avatar_url}
+                          alt="Avatar"
+                          className="w-10 h-10 rounded-full border-2 border-leather-600"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-leather-700 flex items-center justify-center">
+                          <User size={20} className="text-parchment-400" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-parchment-100 truncate font-heading">
+                          {user?.user_metadata?.full_name || user?.user_metadata?.name || 'Usuário'}
+                        </p>
+                        <span className={cn('text-xs px-2 py-0.5 rounded', roleBadge.color)}>
+                          {roleBadge.label}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Menu Items */}
+                  <div className="py-1">
+                    {isAdmin && (
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          navigate('/configuracoes');
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-leather-800/50 transition-colors text-parchment-300"
+                      >
+                        <Settings size={16} />
+                        <span className="text-sm">Configurações</span>
+                      </button>
+                    )}
+
+                    {isSuperadmin && (
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          navigate('/superadmin');
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-leather-800/50 transition-colors text-purple-400"
+                      >
+                        <Shield size={16} />
+                        <span className="text-sm">Painel Superadmin</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Logout */}
+                  <div className="border-t border-leather-700/50 pt-1 mt-1">
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-rust-900/30 transition-colors text-rust-400"
+                    >
+                      <LogOut size={16} />
+                      <span className="text-sm">Sair</span>
+                    </button>
+                  </div>
                 </motion.div>
               </>
             )}

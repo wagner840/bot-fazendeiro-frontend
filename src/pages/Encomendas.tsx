@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   ClipboardList,
   Search,
@@ -8,14 +8,21 @@ import {
   Clock,
   Package,
   TruckIcon,
+  Plus,
+  Trash2,
+  Edit2,
+  X,
+  AlertTriangle,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import {
   Card,
   CardHeader,
   CardContent,
   Table,
   Button,
+  Input,
   Modal,
   ModalFooter,
   Badge,
@@ -31,7 +38,13 @@ import {
   type EncomendaStatus,
   STATUS_LABELS,
 } from '../lib/types';
-import { getEncomendas, updateEncomendaStatus } from '../lib/supabase';
+import {
+  getEncomendas,
+  updateEncomendaStatus,
+  createEncomenda,
+  updateEncomenda,
+  deleteEncomenda,
+} from '../lib/supabase';
 
 const container = {
   hidden: { opacity: 0 },
@@ -46,8 +59,22 @@ const item = {
   show: { opacity: 1, y: 0 },
 };
 
+// Form para criar/editar encomenda
+interface EncomendaForm {
+  comprador: string;
+  valor_total: number;
+  status: EncomendaStatus;
+}
+
+const emptyEncomendaForm: EncomendaForm = {
+  comprador: '',
+  valor_total: 0,
+  status: 'pendente',
+};
+
 export function Encomendas() {
   const { selectedEmpresa, addToast } = useApp();
+  const { isAdmin } = useAuth();
   const [encomendas, setEncomendas] = useState<Encomenda[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -56,6 +83,15 @@ export function Encomendas() {
   // Details Modal
   const [selectedEncomenda, setSelectedEncomenda] = useState<Encomenda | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+
+  // Admin CRUD
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [encomendaForm, setEncomendaForm] = useState<EncomendaForm>(emptyEncomendaForm);
+  const [isSaving, setIsSaving] = useState(false);
+  const [adminError, setAdminError] = useState<string | null>(null);
+  const [adminSuccess, setAdminSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     loadEncomendas();
@@ -105,6 +141,117 @@ export function Encomendas() {
         type: 'error',
         title: 'Erro ao atualizar status',
       });
+    }
+  }
+
+  // ============ ADMIN CRUD FUNCTIONS ============
+
+  function openCreateModal() {
+    setEncomendaForm(emptyEncomendaForm);
+    setShowCreateModal(true);
+    setAdminError(null);
+  }
+
+  function openEditModal(encomenda: Encomenda) {
+    setSelectedEncomenda(encomenda);
+    setEncomendaForm({
+      comprador: encomenda.comprador,
+      valor_total: encomenda.valor_total,
+      status: encomenda.status,
+    });
+    setShowEditModal(true);
+    setAdminError(null);
+  }
+
+  function openDeleteModal(encomenda: Encomenda) {
+    setSelectedEncomenda(encomenda);
+    setShowDeleteModal(true);
+  }
+
+  async function handleCreateEncomenda() {
+    if (!encomendaForm.comprador.trim()) {
+      setAdminError('Nome do comprador é obrigatório');
+      return;
+    }
+
+    if (!selectedEmpresa) return;
+
+    try {
+      setIsSaving(true);
+      setAdminError(null);
+      await createEncomenda({
+        empresa_id: selectedEmpresa.id,
+        comprador: encomendaForm.comprador.trim(),
+        valor_total: encomendaForm.valor_total,
+        status: encomendaForm.status,
+        itens_json: [],
+      });
+
+      setAdminSuccess('Encomenda criada com sucesso!');
+      setShowCreateModal(false);
+      loadEncomendas();
+      setTimeout(() => setAdminSuccess(null), 3000);
+    } catch (err) {
+      console.error('Error creating encomenda:', err);
+      setAdminError('Erro ao criar encomenda');
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleUpdateEncomenda() {
+    if (!selectedEncomenda) return;
+
+    if (!encomendaForm.comprador.trim()) {
+      setAdminError('Nome do comprador é obrigatório');
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      setAdminError(null);
+
+      const updateData: Partial<Encomenda> = {
+        comprador: encomendaForm.comprador.trim(),
+        valor_total: encomendaForm.valor_total,
+        status: encomendaForm.status,
+      };
+
+      if (encomendaForm.status === 'entregue' && selectedEncomenda.status !== 'entregue') {
+        updateData.data_entrega = new Date().toISOString();
+      }
+
+      await updateEncomenda(selectedEncomenda.id, updateData);
+
+      setAdminSuccess('Encomenda atualizada com sucesso!');
+      setShowEditModal(false);
+      loadEncomendas();
+      setTimeout(() => setAdminSuccess(null), 3000);
+    } catch (err) {
+      console.error('Error updating encomenda:', err);
+      setAdminError('Erro ao atualizar encomenda');
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleDeleteEncomenda() {
+    if (!selectedEncomenda) return;
+
+    try {
+      setIsSaving(true);
+      await deleteEncomenda(selectedEncomenda.id);
+
+      setAdminSuccess('Encomenda excluída com sucesso!');
+      setShowDeleteModal(false);
+      setSelectedEncomenda(null);
+      loadEncomendas();
+      setTimeout(() => setAdminSuccess(null), 3000);
+    } catch (err) {
+      console.error('Error deleting encomenda:', err);
+      addToast({ type: 'error', title: 'Erro ao excluir encomenda' });
+    } finally {
+      setIsSaving(false);
     }
   }
 
@@ -198,19 +345,39 @@ export function Encomendas() {
     {
       key: 'actions',
       header: '',
-      width: '100px',
+      width: isAdmin ? '180px' : '100px',
       render: (e: Encomenda) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            setSelectedEncomenda(e);
-            setShowDetailsModal(true);
-          }}
-          leftIcon={<Eye size={14} />}
-        >
-          Detalhes
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setSelectedEncomenda(e);
+              setShowDetailsModal(true);
+            }}
+            leftIcon={<Eye size={14} />}
+          >
+            Detalhes
+          </Button>
+          {isAdmin && (
+            <>
+              <button
+                onClick={() => openEditModal(e)}
+                className="p-1.5 text-parchment-400 hover:text-gold-400 transition-colors"
+                title="Editar"
+              >
+                <Edit2 size={14} />
+              </button>
+              <button
+                onClick={() => openDeleteModal(e)}
+                className="p-1.5 text-parchment-400 hover:text-rust-400 transition-colors"
+                title="Excluir"
+              >
+                <Trash2 size={14} />
+              </button>
+            </>
+          )}
+        </div>
       ),
     },
   ];
@@ -230,7 +397,42 @@ export function Encomendas() {
             Pedidos e entregas de {selectedEmpresa?.nome}
           </p>
         </div>
+        {isAdmin && (
+          <Button onClick={openCreateModal} leftIcon={<Plus size={16} />}>
+            Nova Encomenda
+          </Button>
+        )}
       </motion.div>
+
+      {/* Admin Alerts */}
+      <AnimatePresence>
+        {adminError && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="p-4 bg-rust-900/30 border border-rust-700 rounded-western text-rust-400 flex items-center gap-3"
+          >
+            <AlertTriangle className="w-5 h-5" />
+            {adminError}
+            <button onClick={() => setAdminError(null)} className="ml-auto">
+              <X className="w-4 h-4" />
+            </button>
+          </motion.div>
+        )}
+
+        {adminSuccess && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="p-4 bg-green-900/30 border border-green-700 rounded-western text-green-400 flex items-center gap-3"
+          >
+            <Check className="w-5 h-5" />
+            {adminSuccess}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Stats */}
       <motion.div variants={item} className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -462,6 +664,152 @@ export function Encomendas() {
             </ModalFooter>
           </div>
         )}
+      </Modal>
+
+      {/* Admin Create Encomenda Modal */}
+      <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} title="Nova Encomenda" size="md">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm text-parchment-400 mb-1">Comprador *</label>
+            <Input
+              value={encomendaForm.comprador}
+              onChange={(e) => setEncomendaForm({ ...encomendaForm, comprador: e.target.value })}
+              placeholder="Nome do cliente"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-parchment-400 mb-1">Valor Total</label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={encomendaForm.valor_total}
+                onChange={(e) => setEncomendaForm({ ...encomendaForm, valor_total: parseFloat(e.target.value) || 0 })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-parchment-400 mb-1">Status</label>
+              <select
+                value={encomendaForm.status}
+                onChange={(e) => setEncomendaForm({ ...encomendaForm, status: e.target.value as EncomendaStatus })}
+                className="input-western w-full"
+              >
+                <option value="pendente">Pendente</option>
+                <option value="em_andamento">Em Andamento</option>
+                <option value="entregue">Entregue</option>
+              </select>
+            </div>
+          </div>
+
+          {adminError && (
+            <div className="p-3 bg-rust-900/30 border border-rust-700 rounded-western text-rust-400 text-sm">
+              {adminError}
+            </div>
+          )}
+
+          <ModalFooter>
+            <Button variant="secondary" onClick={() => setShowCreateModal(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleCreateEncomenda} isLoading={isSaving} leftIcon={<Plus size={16} />}>
+              Criar Encomenda
+            </Button>
+          </ModalFooter>
+        </div>
+      </Modal>
+
+      {/* Admin Edit Encomenda Modal */}
+      <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title="Editar Encomenda" size="md">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm text-parchment-400 mb-1">Comprador *</label>
+            <Input
+              value={encomendaForm.comprador}
+              onChange={(e) => setEncomendaForm({ ...encomendaForm, comprador: e.target.value })}
+              placeholder="Nome do cliente"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-parchment-400 mb-1">Valor Total</label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={encomendaForm.valor_total}
+                onChange={(e) => setEncomendaForm({ ...encomendaForm, valor_total: parseFloat(e.target.value) || 0 })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-parchment-400 mb-1">Status</label>
+              <select
+                value={encomendaForm.status}
+                onChange={(e) => setEncomendaForm({ ...encomendaForm, status: e.target.value as EncomendaStatus })}
+                className="input-western w-full"
+              >
+                <option value="pendente">Pendente</option>
+                <option value="em_andamento">Em Andamento</option>
+                <option value="entregue">Entregue</option>
+              </select>
+            </div>
+          </div>
+
+          {adminError && (
+            <div className="p-3 bg-rust-900/30 border border-rust-700 rounded-western text-rust-400 text-sm">
+              {adminError}
+            </div>
+          )}
+
+          <ModalFooter>
+            <Button variant="secondary" onClick={() => setShowEditModal(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleUpdateEncomenda} isLoading={isSaving} leftIcon={<Check size={16} />}>
+              Salvar Alterações
+            </Button>
+          </ModalFooter>
+        </div>
+      </Modal>
+
+      {/* Admin Delete Confirmation Modal */}
+      <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)}>
+        <div className="p-6 text-center">
+          <div className="w-16 h-16 rounded-full bg-rust-900/30 flex items-center justify-center mx-auto mb-4">
+            <Trash2 className="w-8 h-8 text-rust-500" />
+          </div>
+
+          <h2 className="font-heading text-xl text-parchment-100 mb-2">
+            Excluir Encomenda?
+          </h2>
+
+          <p className="text-parchment-400 mb-6">
+            Tem certeza que deseja excluir a encomenda{' '}
+            <span className="text-gold-500 font-mono">#{selectedEncomenda?.id}</span>
+            {' '}de {selectedEncomenda?.comprador}?
+            <br />
+            Esta ação não pode ser desfeita.
+          </p>
+
+          <div className="flex justify-center gap-3">
+            <Button
+              variant="secondary"
+              onClick={() => setShowDeleteModal(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleDeleteEncomenda}
+              isLoading={isSaving}
+              className="bg-rust-600 hover:bg-rust-700"
+              leftIcon={<Trash2 size={16} />}
+            >
+              Excluir
+            </Button>
+          </div>
+        </div>
       </Modal>
     </motion.div>
   );

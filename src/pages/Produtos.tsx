@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Package,
   Search,
@@ -8,8 +8,13 @@ import {
   Warehouse,
   Tag,
   Check,
+  Plus,
+  Trash2,
+  X,
+  AlertTriangle,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import {
   Card,
   CardHeader,
@@ -24,11 +29,18 @@ import {
 import {
   formatCurrency,
   type ProdutoEmpresa,
+  type ProdutoReferencia,
+  type TipoEmpresa,
 } from '../lib/types';
 import {
   getProdutosEmpresa,
   getCategorias,
   updateProdutoPreco,
+  getAllProdutosReferencia,
+  createProdutoReferencia,
+  updateProdutoReferencia,
+  deleteProdutoReferencia,
+  getTiposEmpresa,
 } from '../lib/supabase';
 
 const container = {
@@ -44,19 +56,54 @@ const item = {
   show: { opacity: 1, y: 0 },
 };
 
+// Form para criar/editar produto de referência
+interface ProdutoRefForm {
+  tipo_empresa_id: number;
+  codigo: string;
+  nome: string;
+  categoria: string;
+  preco_minimo: number;
+  preco_maximo: number;
+  unidade: string;
+  ativo: boolean;
+}
+
+const emptyProdutoForm: ProdutoRefForm = {
+  tipo_empresa_id: 0,
+  codigo: '',
+  nome: '',
+  categoria: '',
+  preco_minimo: 0,
+  preco_maximo: 0,
+  unidade: 'un',
+  ativo: true,
+};
+
 export function Produtos() {
   const { selectedEmpresa, addToast } = useApp();
+  const { isAdmin } = useAuth();
   const [produtos, setProdutos] = useState<ProdutoEmpresa[]>([]);
   const [categorias, setCategorias] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoria, setSelectedCategoria] = useState<string>('');
 
-  // Edit Modal
+  // Edit Price Modal (existing)
   const [editingProduct, setEditingProduct] = useState<ProdutoEmpresa | null>(null);
   const [editPrecoVenda, setEditPrecoVenda] = useState('');
   const [editPrecoPagamento, setEditPrecoPagamento] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Admin CRUD - Produtos Referência
+  const [produtosReferencia, setProdutosReferencia] = useState<(ProdutoReferencia & { tipo_empresa?: TipoEmpresa })[]>([]);
+  const [tiposEmpresa, setTiposEmpresa] = useState<TipoEmpresa[]>([]);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditRefModal, setShowEditRefModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedProdutoRef, setSelectedProdutoRef] = useState<ProdutoReferencia | null>(null);
+  const [produtoForm, setProdutoForm] = useState<ProdutoRefForm>(emptyProdutoForm);
+  const [adminError, setAdminError] = useState<string | null>(null);
+  const [adminSuccess, setAdminSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -137,7 +184,148 @@ export function Produtos() {
     }
   }
 
-  // Filter and search
+  // ============ ADMIN CRUD FUNCTIONS ============
+
+  async function loadAdminData() {
+    if (!isAdmin) return;
+    try {
+      const [produtosRefData, tiposData] = await Promise.all([
+        getAllProdutosReferencia(),
+        getTiposEmpresa(),
+      ]);
+      setProdutosReferencia(produtosRefData);
+      setTiposEmpresa(tiposData);
+    } catch (error) {
+      console.error('Error loading admin data:', error);
+    }
+  }
+
+  useEffect(() => {
+    if (isAdmin) {
+      loadAdminData();
+    }
+  }, [isAdmin]);
+
+  function openCreateModal() {
+    setProdutoForm({ ...emptyProdutoForm, tipo_empresa_id: tiposEmpresa[0]?.id || 0 });
+    setShowCreateModal(true);
+    setAdminError(null);
+  }
+
+  function openEditRefModal(produto: ProdutoReferencia) {
+    setSelectedProdutoRef(produto);
+    setProdutoForm({
+      tipo_empresa_id: produto.tipo_empresa_id,
+      codigo: produto.codigo,
+      nome: produto.nome,
+      categoria: produto.categoria || '',
+      preco_minimo: produto.preco_minimo,
+      preco_maximo: produto.preco_maximo,
+      unidade: produto.unidade || 'un',
+      ativo: produto.ativo,
+    });
+    setShowEditRefModal(true);
+    setAdminError(null);
+  }
+
+  function openDeleteModal(produto: ProdutoReferencia) {
+    setSelectedProdutoRef(produto);
+    setShowDeleteModal(true);
+  }
+
+  async function handleCreateProduto() {
+    if (!produtoForm.codigo.trim() || !produtoForm.nome.trim()) {
+      setAdminError('Código e nome são obrigatórios');
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      setAdminError(null);
+      await createProdutoReferencia({
+        tipo_empresa_id: produtoForm.tipo_empresa_id,
+        codigo: produtoForm.codigo.trim(),
+        nome: produtoForm.nome.trim(),
+        categoria: produtoForm.categoria.trim() || null as unknown as string,
+        preco_minimo: produtoForm.preco_minimo,
+        preco_maximo: produtoForm.preco_maximo,
+        unidade: produtoForm.unidade || 'un',
+        ativo: produtoForm.ativo,
+      });
+
+      setAdminSuccess('Produto criado com sucesso!');
+      setShowCreateModal(false);
+      loadAdminData();
+      loadData();
+      setTimeout(() => setAdminSuccess(null), 3000);
+    } catch (err: unknown) {
+      console.error('Error creating product:', err);
+      const errorObj = err as { code?: string };
+      if (errorObj.code === '23505') {
+        setAdminError('Já existe um produto com este código');
+      } else {
+        setAdminError('Erro ao criar produto');
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleUpdateRef() {
+    if (!selectedProdutoRef) return;
+
+    if (!produtoForm.codigo.trim() || !produtoForm.nome.trim()) {
+      setAdminError('Código e nome são obrigatórios');
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      setAdminError(null);
+      await updateProdutoReferencia(selectedProdutoRef.id, {
+        tipo_empresa_id: produtoForm.tipo_empresa_id,
+        codigo: produtoForm.codigo.trim(),
+        nome: produtoForm.nome.trim(),
+        categoria: produtoForm.categoria.trim() || undefined,
+        preco_minimo: produtoForm.preco_minimo,
+        preco_maximo: produtoForm.preco_maximo,
+        unidade: produtoForm.unidade || 'un',
+        ativo: produtoForm.ativo,
+      });
+
+      setAdminSuccess('Produto atualizado com sucesso!');
+      setShowEditRefModal(false);
+      loadAdminData();
+      loadData();
+      setTimeout(() => setAdminSuccess(null), 3000);
+    } catch (err) {
+      console.error('Error updating product:', err);
+      setAdminError('Erro ao atualizar produto');
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleDeleteProduto() {
+    if (!selectedProdutoRef) return;
+
+    try {
+      setIsSaving(true);
+      await deleteProdutoReferencia(selectedProdutoRef.id);
+
+      setAdminSuccess('Produto excluído com sucesso!');
+      setShowDeleteModal(false);
+      setSelectedProdutoRef(null);
+      loadAdminData();
+      loadData();
+      setTimeout(() => setAdminSuccess(null), 3000);
+    } catch (err) {
+      console.error('Error deleting product:', err);
+      addToast({ type: 'error', title: 'Erro ao excluir', message: 'Verifique se não há produtos vinculados' });
+    } finally {
+      setIsSaving(false);
+    }
+  }  // Filter and search
   const filteredProdutos = useMemo(() => {
     let result = produtos;
 
@@ -270,7 +458,42 @@ export function Produtos() {
             Catálogo e preços de {selectedEmpresa?.nome}
           </p>
         </div>
+        {isAdmin && (
+          <Button onClick={openCreateModal} leftIcon={<Plus size={16} />}>
+            Novo Produto
+          </Button>
+        )}
       </motion.div>
+
+      {/* Admin Alerts */}
+      <AnimatePresence>
+        {adminError && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="p-4 bg-rust-900/30 border border-rust-700 rounded-western text-rust-400 flex items-center gap-3"
+          >
+            <AlertTriangle className="w-5 h-5" />
+            {adminError}
+            <button onClick={() => setAdminError(null)} className="ml-auto">
+              <X className="w-4 h-4" />
+            </button>
+          </motion.div>
+        )}
+
+        {adminSuccess && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="p-4 bg-green-900/30 border border-green-700 rounded-western text-green-400 flex items-center gap-3"
+          >
+            <Check className="w-5 h-5" />
+            {adminSuccess}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Stats */}
       <motion.div variants={item} className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -408,6 +631,82 @@ export function Produtos() {
         </Card>
       </motion.div>
 
+      {/* Admin Section - Produtos de Referência */}
+      {isAdmin && produtosReferencia.length > 0 && (
+        <motion.div variants={item}>
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Package className="w-5 h-5 text-gold-500" />
+                  <h2 className="font-heading text-lg text-parchment-100">
+                    Produtos de Referência (Admin)
+                  </h2>
+                  <Badge variant="gold">{produtosReferencia.length}</Badge>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto max-h-72">
+                <table className="w-full">
+                  <thead className="sticky top-0 bg-leather-900">
+                    <tr className="border-b border-leather-700/50">
+                      <th className="text-left px-4 py-2 text-xs text-parchment-500 uppercase">Tipo</th>
+                      <th className="text-left px-4 py-2 text-xs text-parchment-500 uppercase">Código</th>
+                      <th className="text-left px-4 py-2 text-xs text-parchment-500 uppercase">Nome</th>
+                      <th className="text-left px-4 py-2 text-xs text-parchment-500 uppercase">Categoria</th>
+                      <th className="text-left px-4 py-2 text-xs text-parchment-500 uppercase">Preço Mín/Máx</th>
+                      <th className="text-left px-4 py-2 text-xs text-parchment-500 uppercase">Status</th>
+                      <th className="text-right px-4 py-2 text-xs text-parchment-500 uppercase">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {produtosReferencia.map((pr) => (
+                      <tr key={pr.id} className="border-b border-leather-800/50 hover:bg-leather-800/30">
+                        <td className="px-4 py-2">
+                          <span className="text-lg" title={pr.tipo_empresa?.nome}>{pr.tipo_empresa?.icone || '📦'}</span>
+                        </td>
+                        <td className="px-4 py-2">
+                          <span className="font-mono text-xs text-gold-500">{pr.codigo}</span>
+                        </td>
+                        <td className="px-4 py-2 text-parchment-200 text-sm">{pr.nome}</td>
+                        <td className="px-4 py-2 text-parchment-400 text-sm">{pr.categoria || '-'}</td>
+                        <td className="px-4 py-2 text-parchment-300 text-sm">
+                          {formatCurrency(pr.preco_minimo)} - {formatCurrency(pr.preco_maximo)}
+                        </td>
+                        <td className="px-4 py-2">
+                          <Badge variant={pr.ativo ? 'gold' : 'danger'} className="text-xs">
+                            {pr.ativo ? 'Ativo' : 'Inativo'}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-2 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => openEditRefModal(pr)}
+                              className="p-1.5 text-parchment-400 hover:text-gold-400 transition-colors"
+                              title="Editar"
+                            >
+                              <Edit3 size={14} />
+                            </button>
+                            <button
+                              onClick={() => openDeleteModal(pr)}
+                              className="p-1.5 text-parchment-400 hover:text-rust-400 transition-colors"
+                              title="Excluir"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
       {/* Edit Price Modal */}
       <Modal
         isOpen={!!editingProduct}
@@ -513,6 +812,255 @@ export function Produtos() {
             </ModalFooter>
           </div>
         )}
+      </Modal>
+
+      {/* Admin Create Product Modal */}
+      <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} title="Novo Produto de Referência" size="lg">
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-parchment-400 mb-1">Tipo de Empresa *</label>
+              <select
+                value={produtoForm.tipo_empresa_id}
+                onChange={(e) => setProdutoForm({ ...produtoForm, tipo_empresa_id: Number(e.target.value) })}
+                className="input-western w-full"
+              >
+                {tiposEmpresa.map((tipo) => (
+                  <option key={tipo.id} value={tipo.id}>
+                    {tipo.icone} {tipo.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm text-parchment-400 mb-1">Código *</label>
+              <Input
+                value={produtoForm.codigo}
+                onChange={(e) => setProdutoForm({ ...produtoForm, codigo: e.target.value })}
+                placeholder="Ex: CARNE_BOVINA"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-parchment-400 mb-1">Nome *</label>
+              <Input
+                value={produtoForm.nome}
+                onChange={(e) => setProdutoForm({ ...produtoForm, nome: e.target.value })}
+                placeholder="Ex: Carne Bovina"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-parchment-400 mb-1">Categoria</label>
+              <Input
+                value={produtoForm.categoria}
+                onChange={(e) => setProdutoForm({ ...produtoForm, categoria: e.target.value })}
+                placeholder="Ex: Carnes"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm text-parchment-400 mb-1">Preço Mínimo *</label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={produtoForm.preco_minimo}
+                onChange={(e) => setProdutoForm({ ...produtoForm, preco_minimo: parseFloat(e.target.value) || 0 })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-parchment-400 mb-1">Preço Máximo *</label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={produtoForm.preco_maximo}
+                onChange={(e) => setProdutoForm({ ...produtoForm, preco_maximo: parseFloat(e.target.value) || 0 })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-parchment-400 mb-1">Unidade</label>
+              <Input
+                value={produtoForm.unidade}
+                onChange={(e) => setProdutoForm({ ...produtoForm, unidade: e.target.value })}
+                placeholder="un"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="ativo-create"
+              checked={produtoForm.ativo}
+              onChange={(e) => setProdutoForm({ ...produtoForm, ativo: e.target.checked })}
+              className="w-4 h-4"
+            />
+            <label htmlFor="ativo-create" className="text-sm text-parchment-400">
+              Produto ativo
+            </label>
+          </div>
+
+          {adminError && (
+            <div className="p-3 bg-rust-900/30 border border-rust-700 rounded-western text-rust-400 text-sm">
+              {adminError}
+            </div>
+          )}
+
+          <ModalFooter>
+            <Button variant="secondary" onClick={() => setShowCreateModal(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleCreateProduto} isLoading={isSaving} leftIcon={<Plus size={16} />}>
+              Criar Produto
+            </Button>
+          </ModalFooter>
+        </div>
+      </Modal>
+
+      {/* Admin Edit Product Modal */}
+      <Modal isOpen={showEditRefModal} onClose={() => setShowEditRefModal(false)} title="Editar Produto de Referência" size="lg">
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-parchment-400 mb-1">Tipo de Empresa *</label>
+              <select
+                value={produtoForm.tipo_empresa_id}
+                onChange={(e) => setProdutoForm({ ...produtoForm, tipo_empresa_id: Number(e.target.value) })}
+                className="input-western w-full"
+              >
+                {tiposEmpresa.map((tipo) => (
+                  <option key={tipo.id} value={tipo.id}>
+                    {tipo.icone} {tipo.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm text-parchment-400 mb-1">Código *</label>
+              <Input
+                value={produtoForm.codigo}
+                onChange={(e) => setProdutoForm({ ...produtoForm, codigo: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-parchment-400 mb-1">Nome *</label>
+              <Input
+                value={produtoForm.nome}
+                onChange={(e) => setProdutoForm({ ...produtoForm, nome: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-parchment-400 mb-1">Categoria</label>
+              <Input
+                value={produtoForm.categoria}
+                onChange={(e) => setProdutoForm({ ...produtoForm, categoria: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm text-parchment-400 mb-1">Preço Mínimo *</label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={produtoForm.preco_minimo}
+                onChange={(e) => setProdutoForm({ ...produtoForm, preco_minimo: parseFloat(e.target.value) || 0 })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-parchment-400 mb-1">Preço Máximo *</label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={produtoForm.preco_maximo}
+                onChange={(e) => setProdutoForm({ ...produtoForm, preco_maximo: parseFloat(e.target.value) || 0 })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-parchment-400 mb-1">Unidade</label>
+              <Input
+                value={produtoForm.unidade}
+                onChange={(e) => setProdutoForm({ ...produtoForm, unidade: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="ativo-edit"
+              checked={produtoForm.ativo}
+              onChange={(e) => setProdutoForm({ ...produtoForm, ativo: e.target.checked })}
+              className="w-4 h-4"
+            />
+            <label htmlFor="ativo-edit" className="text-sm text-parchment-400">
+              Produto ativo
+            </label>
+          </div>
+
+          {adminError && (
+            <div className="p-3 bg-rust-900/30 border border-rust-700 rounded-western text-rust-400 text-sm">
+              {adminError}
+            </div>
+          )}
+
+          <ModalFooter>
+            <Button variant="secondary" onClick={() => setShowEditRefModal(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleUpdateRef} isLoading={isSaving} leftIcon={<Check size={16} />}>
+              Salvar Alterações
+            </Button>
+          </ModalFooter>
+        </div>
+      </Modal>
+
+      {/* Admin Delete Confirmation Modal */}
+      <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)}>
+        <div className="p-6 text-center">
+          <div className="w-16 h-16 rounded-full bg-rust-900/30 flex items-center justify-center mx-auto mb-4">
+            <Trash2 className="w-8 h-8 text-rust-500" />
+          </div>
+
+          <h2 className="font-heading text-xl text-parchment-100 mb-2">
+            Excluir Produto?
+          </h2>
+
+          <p className="text-parchment-400 mb-6">
+            Tem certeza que deseja excluir o produto{' '}
+            <span className="text-gold-500 font-mono">{selectedProdutoRef?.nome}</span>?
+            <br />
+            Esta ação não pode ser desfeita.
+          </p>
+
+          <div className="flex justify-center gap-3">
+            <Button
+              variant="secondary"
+              onClick={() => setShowDeleteModal(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleDeleteProduto}
+              isLoading={isSaving}
+              className="bg-rust-600 hover:bg-rust-700"
+              leftIcon={<Trash2 size={16} />}
+            >
+              Excluir
+            </Button>
+          </div>
+        </div>
       </Modal>
     </motion.div>
   );

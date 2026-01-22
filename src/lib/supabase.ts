@@ -466,3 +466,97 @@ export async function getCategorias(empresaId: number): Promise<string[]> {
 
   return Array.from(categorias).sort();
 }
+
+// ============ ADMIN: PRODUTOS REFERENCIA CRUD ============
+
+export async function getAllProdutosReferencia(): Promise<ProdutoReferencia[]> {
+  const { data, error } = await supabase
+    .from('produtos_referencia')
+    .select(`
+      *,
+      tipo_empresa:tipos_empresa(*)
+    `)
+    .order('tipo_empresa_id')
+    .order('categoria')
+    .order('nome');
+
+  if (error) throw error;
+  return data || [];
+}
+
+export async function createProdutoReferencia(
+  produto: Omit<ProdutoReferencia, 'id'>
+): Promise<ProdutoReferencia> {
+  const { data, error } = await supabase
+    .from('produtos_referencia')
+    .insert(produto)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function updateProdutoReferencia(
+  id: number,
+  produto: Partial<ProdutoReferencia>
+): Promise<ProdutoReferencia> {
+  const { data, error } = await supabase
+    .from('produtos_referencia')
+    .update(produto)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteProdutoReferencia(id: number): Promise<void> {
+  const { error } = await supabase
+    .from('produtos_referencia')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
+}
+
+// ============ ADMIN: ENCOMENDAS CRUD ============
+
+export async function getAllEncomendas(): Promise<Encomenda[]> {
+  const { data, error } = await supabase
+    .from('encomendas')
+    .select(`
+      *,
+      empresa:empresas(id, nome),
+      funcionario_responsavel:funcionarios(*)
+    `)
+    .order('data_criacao', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+}
+
+export async function updateEncomenda(
+  id: number,
+  encomenda: Partial<Encomenda>
+): Promise<Encomenda> {
+  const { data, error } = await supabase
+    .from('encomendas')
+    .update(encomenda)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteEncomenda(id: number): Promise<void> {
+  const { error } = await supabase
+    .from('encomendas')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
+}

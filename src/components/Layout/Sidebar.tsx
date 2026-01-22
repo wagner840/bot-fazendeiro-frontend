@@ -10,8 +10,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Wheat,
+  UserCog,
+  Building2,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { useAuth } from '../../context/AuthContext';
 import { cn } from '../../lib/utils';
 import { BUSINESS_ICONS } from '../../lib/types';
 
@@ -52,25 +55,30 @@ function NavItem({ to, icon, label, collapsed }: NavItemProps) {
 }
 
 export function Sidebar() {
-  const { 
-    selectedEmpresa, 
-    sidebarCollapsed, 
+  const {
+    selectedEmpresa,
+    sidebarCollapsed,
     setSidebarCollapsed,
     mobileMenuOpen,
     setMobileMenuOpen
   } = useApp();
+  const { isAdmin } = useAuth();
 
   const businessIcon = selectedEmpresa?.tipo_empresa?.codigo
     ? BUSINESS_ICONS[selectedEmpresa.tipo_empresa.codigo] || '🏢'
     : '🏢';
 
   const navItems = [
-    { to: '/', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
-    { to: '/funcionarios', icon: <Users size={20} />, label: 'Funcionários' },
-    { to: '/produtos', icon: <Package size={20} />, label: 'Produtos' },
-    { to: '/encomendas', icon: <ClipboardList size={20} />, label: 'Encomendas' },
-    { to: '/financeiro', icon: <DollarSign size={20} />, label: 'Financeiro' },
-    { to: '/configuracoes', icon: <Settings size={20} />, label: 'Configurações' },
+    { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
+    { to: '/dashboard/funcionarios', icon: <Users size={20} />, label: 'Funcionários' },
+    { to: '/dashboard/produtos', icon: <Package size={20} />, label: 'Produtos' },
+    { to: '/dashboard/encomendas', icon: <ClipboardList size={20} />, label: 'Encomendas' },
+    { to: '/dashboard/financeiro', icon: <DollarSign size={20} />, label: 'Financeiro' },
+    ...(isAdmin ? [
+      { to: '/dashboard/empresas', icon: <Building2 size={20} />, label: 'Minhas Empresas' },
+      { to: '/dashboard/usuarios', icon: <UserCog size={20} />, label: 'Gerenciar Usuários' },
+      { to: '/dashboard/configuracoes', icon: <Settings size={20} />, label: 'Configurações' },
+    ] : []),
   ];
 
   // Close mobile menu on navigation
