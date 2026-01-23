@@ -42,7 +42,7 @@ export function AuthCallback() {
 
         if (session) {
           // Success - redirect to home
-          navigate('/', { replace: true });
+          navigate('/dashboard', { replace: true });
         } else {
           // No session - something went wrong
           throw new Error('Falha ao obter sessão após autenticação');
@@ -60,7 +60,7 @@ export function AuthCallback() {
              const { data: { session } } = await supabase.auth.getSession();
              
              if (session) {
-                navigate('/', { replace: true });
+                navigate('/dashboard', { replace: true });
                 return;
              }
           } catch (retryErr) {
