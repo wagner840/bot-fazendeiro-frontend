@@ -13,3 +13,4 @@ export { GerenciarEmpresas } from './GerenciarEmpresas';
 export { LandingPage } from './LandingPage';
 export { Checkout } from './Checkout';
 export { AssinaturaExpirada } from './AssinaturaExpirada';
+export { SuperAdminTesters } from './SuperAdminTesters';
