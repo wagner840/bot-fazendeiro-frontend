@@ -139,9 +139,10 @@ export function Checkout() {
       });
 
       setTimeLeft(900);
-    } catch (error) {
+      setTimeLeft(900);
+    } catch (error: any) {
       console.error('Error generating PIX:', error);
-      alert('Erro ao gerar QR Code PIX. Por favor, tente novamente.');
+      alert(`Erro ao gerar QR Code PIX: ${error.message || 'Erro desconhecido'}`);
     } finally {
       setGeneratingPix(false);
     }
