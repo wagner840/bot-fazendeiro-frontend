@@ -110,21 +110,19 @@ export function Checkout() {
     setGeneratingPix(true);
 
     try {
-      // Call Supabase Edge Function to create PIX charge via Asaas API
-      const response = await fetch(
-        'https://rgopdilceawaqrgaoaca.supabase.co/functions/v1/create-pix-charge',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            guild_id: userFrontend.guild_id,
-            plano_id: selectedPlano.id,
-            pagador_discord_id: userFrontend.discord_id,
-          }),
-        }
-      );
+      // Call Python Backend API to create PIX charge
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const response = await fetch(`${apiUrl}/api/pix/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          guild_id: userFrontend.guild_id,
+          plano_id: selectedPlano.id,
+          pagador_discord_id: userFrontend.discord_id,
+        }),
+      });
 
       if (!response.ok) {
         const error = await response.json();
