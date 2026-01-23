@@ -12,6 +12,7 @@ import {
   Wheat,
   UserCog,
   Building2,
+  Shield,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
@@ -62,7 +63,7 @@ export function Sidebar() {
     mobileMenuOpen,
     setMobileMenuOpen
   } = useApp();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isSuperadmin } = useAuth();
 
   const businessIcon = selectedEmpresa?.tipo_empresa?.codigo
     ? BUSINESS_ICONS[selectedEmpresa.tipo_empresa.codigo] || '🏢'
@@ -78,6 +79,9 @@ export function Sidebar() {
       { to: '/dashboard/empresas', icon: <Building2 size={20} />, label: 'Minhas Empresas' },
       { to: '/dashboard/usuarios', icon: <UserCog size={20} />, label: 'Gerenciar Usuários' },
       { to: '/dashboard/configuracoes', icon: <Settings size={20} />, label: 'Configurações' },
+    ] : []),
+    ...(isSuperadmin ? [
+       { to: '/dashboard/superadmin/testers', icon: <Shield size={20} />, label: 'Gerenciar Testers' },
     ] : []),
   ];
 
