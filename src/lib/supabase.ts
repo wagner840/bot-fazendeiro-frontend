@@ -360,45 +360,68 @@ export async function getDashboardStats(empresaId: number): Promise<DashboardSta
 const CHART_COLORS = ['#d4a853', '#8b2635', '#6d4f28', '#4a7c59', '#c4a77d'];
 
 export async function getRevenueChartData(empresaId: number): Promise<{ mes: string; receita: number; pagamentos: number }[]> {
-  // Get last 6 months of data
-  const months: { mes: string; receita: number; pagamentos: number }[] = [];
+  const monthsData: { [key: string]: { receita: number; pagamentos: number } } = {};
+  const monthNames: string[] = [];
   const now = new Date();
 
+  // Initialize map with last 6 months
   for (let i = 5; i >= 0; i--) {
-    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const monthName = date.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '');
-    const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1).toISOString();
-    const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59).toISOString();
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '');
+    const label = key.charAt(0).toUpperCase() + key.slice(1);
+    monthsData[label] = { receita: 0, pagamentos: 0 };
+    monthNames.push(label);
+  }
 
-    // Get revenue from delivered orders
-    const { data: orders } = await supabase
-      .from('encomendas')
-      .select('valor_total')
-      .eq('empresa_id', empresaId)
-      .eq('status', 'entregue')
-      .gte('data_entrega', startOfMonth)
-      .lte('data_entrega', endOfMonth);
+  const startRange = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString();
+  const endRange = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
 
-    const receita = orders?.reduce((sum, o) => sum + (o.valor_total || 0), 0) || 0;
+  // 1. Fetch Orders (Single Query)
+  const { data: orders } = await supabase
+    .from('encomendas')
+    .select('valor_total, data_entrega')
+    .eq('empresa_id', empresaId)
+    .eq('status', 'entregue')
+    .gte('data_entrega', startRange)
+    .lte('data_entrega', endRange);
 
-    // Get payments made
-    const { data: payments } = await supabase
-      .from('historico_pagamentos')
-      .select('valor, funcionario:funcionarios!inner(empresa_id)')
-      .eq('funcionario.empresa_id', empresaId)
-      .gte('data_pagamento', startOfMonth)
-      .lte('data_pagamento', endOfMonth);
-
-    const pagamentos = payments?.reduce((sum, p) => sum + (p.valor || 0), 0) || 0;
-
-    months.push({
-      mes: monthName.charAt(0).toUpperCase() + monthName.slice(1),
-      receita,
-      pagamentos,
+  if (orders) {
+    orders.forEach(o => {
+      if (!o.data_entrega) return;
+      const d = new Date(o.data_entrega);
+      const key = d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '');
+      const label = key.charAt(0).toUpperCase() + key.slice(1);
+      if (monthsData[label]) {
+        monthsData[label].receita += (o.valor_total || 0);
+      }
     });
   }
 
-  return months;
+  // 2. Fetch Payments (Single Query)
+  const { data: payments } = await supabase
+    .from('historico_pagamentos')
+    .select('valor, data_pagamento, funcionario:funcionarios!inner(empresa_id)')
+    .eq('funcionario.empresa_id', empresaId)
+    .gte('data_pagamento', startRange)
+    .lte('data_pagamento', endRange);
+
+  if (payments) {
+    payments.forEach(p => {
+      if (!p.data_pagamento) return;
+      const d = new Date(p.data_pagamento);
+      const key = d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '');
+      const label = key.charAt(0).toUpperCase() + key.slice(1);
+      if (monthsData[label]) {
+        monthsData[label].pagamentos += (p.valor || 0);
+      }
+    });
+  }
+
+  return monthNames.map(mes => ({
+    mes,
+    receita: monthsData[mes].receita,
+    pagamentos: monthsData[mes].pagamentos
+  }));
 }
 
 export async function getCategoryDistribution(empresaId: number): Promise<{ name: string; value: number; fill: string }[]> {
