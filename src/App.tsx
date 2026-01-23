@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { AppProvider } from './context/AppContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -37,6 +37,7 @@ function App() {
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
             <Route path="/assinatura-expirada" element={<AssinaturaExpirada />} />
+            <Route path="/superadmin" element={<Navigate to="/dashboard/superadmin/testers" replace />} />
 
             {/* Protected routes - require auth + active subscription */}
             <Route
@@ -78,14 +79,24 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              <Route
-                path="superadmin"
-                element={
-                  <ProtectedRoute requiredRole="superadmin">
-                    <SuperadminPanel />
-                  </ProtectedRoute>
-                }
-              />
+              <Route path="superadmin">
+                <Route
+                  index
+                  element={
+                    <ProtectedRoute requiredRole="superadmin">
+                      <SuperadminPanel />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="testers"
+                  element={
+                    <ProtectedRoute requiredRole="superadmin">
+                      <SuperAdminTesters />
+                    </ProtectedRoute>
+                  }
+                />
+              </Route>
             </Route>
           </Routes>
         </BrowserRouter>
