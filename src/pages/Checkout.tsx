@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { QrCode, Copy, Check, Clock, ArrowLeft, Loader2, CheckCircle } from 'lucide-react';
+import { QrCode, Copy, Check, Clock, ArrowLeft, Loader2, CheckCircle, Users } from 'lucide-react';
+import InputMask from 'inputmask';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 
@@ -22,16 +23,31 @@ interface PixData {
 export function Checkout() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { userFrontend } = useAuth();
+  const { user, userFrontend, isLoggedIn, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && !isLoggedIn) {
+      navigate('/login', { state: { from: { pathname: '/checkout' } } });
+    }
+  }, [isLoggedIn, authLoading, navigate]);
 
   const [planos, setPlanos] = useState<Plano[]>([]);
   const [selectedPlano, setSelectedPlano] = useState<Plano | null>(null);
   const [loading, setLoading] = useState(true);
   const [generatingPix, setGeneratingPix] = useState(false);
   const [pixData, setPixData] = useState<PixData | null>(null);
+  const [cpf, setCpf] = useState('');
+  const [email, setEmail] = useState('');
   const [copied, setCopied] = useState(false);
   const [timeLeft, setTimeLeft] = useState(900); // 15 minutes
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'paid' | 'expired'>('pending');
+
+  useEffect(() => {
+    const cpfInput = document.getElementById('cpf');
+    if (cpfInput) {
+      InputMask({ mask: '999.999.999-99' }).mask(cpfInput);
+    }
+  }, []);
 
   // Load planos
   useEffect(() => {
@@ -92,7 +108,7 @@ export function Checkout() {
       const { data } = await supabase
         .from('pagamentos_pix')
         .select('status')
-        .eq('id', pixData.paymentId)
+        .eq('pix_id', pixData.paymentId)
         .single();
 
       if (data?.status === 'pago') {
@@ -105,31 +121,66 @@ export function Checkout() {
   }, [pixData, paymentStatus]);
 
   const generatePix = async () => {
-    if (!selectedPlano || !userFrontend?.guild_id) return;
+    console.log('--- Debug: generatePix Start ---');
+    console.log('Selected Plan:', selectedPlano);
+    console.log('User:', user);
+    console.log('User Frontend:', userFrontend);
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    console.log('API URL:', apiUrl);
+
+    if (!selectedPlano) {
+        console.error('Debug: No plan selected');
+        return;
+    }
+    
+    if (!user) {
+        console.error('Debug: No user found');
+        alert('Erro: Usuário não autenticado. Por favor, faça login novamente.');
+        // Optional: Force logout or redirect
+        return;
+    }
+
+    // Get Discord ID from userFrontend or Session Metadata
+    const discordId = userFrontend?.discord_id || 
+                     user.user_metadata?.provider_id || 
+                     user.identities?.find((i: any) => i.provider === 'discord')?.id;
+
+    console.log('Debug: Resolved Discord ID:', discordId);
+
+    if (!discordId) {
+      alert('Erro: ID do Discord não encontrado. Tente logar novamente.');
+      return;
+    }
 
     setGeneratingPix(true);
 
     try {
       // Call Python Backend API to create PIX charge
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      console.log(`Debug: Fetching ${apiUrl}/api/pix/create`);
       const response = await fetch(`${apiUrl}/api/pix/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          guild_id: userFrontend.guild_id,
+          guild_id: userFrontend?.guild_id || 'pending_activation', // Use pending if no guild yet
           plano_id: selectedPlano.id,
-          pagador_discord_id: userFrontend.discord_id,
+          pagador_discord_id: discordId,
+          cpf_cnpj: cpf.replace(/\D/g, ''),
+          email: email,
         }),
       });
 
+      console.log('Debug: Response status:', response.status);
+
       if (!response.ok) {
         const error = await response.json();
+        console.error('Debug: API Error:', error);
         throw new Error(error.error || 'Erro ao gerar PIX');
       }
 
       const data = await response.json();
+      console.log('Debug: API Data:', data);
 
       setPixData({
         qrcode: data.qrcode,
@@ -187,12 +238,23 @@ export function Checkout() {
           <p className="text-parchment-300 mb-8">
             Sua assinatura foi ativada com sucesso. Agora você tem acesso completo ao Bot Fazendeiro!
           </p>
-          <button
-            onClick={() => navigate('/login')}
-            className="w-full py-3 bg-gold-500 text-leather-950 font-heading rounded-western hover:bg-gold-400 transition-colors"
-          >
-            Acessar o Painel
-          </button>
+          <div className="flex flex-col gap-3">
+            <a
+              href="https://discord.com/oauth2/authorize?client_id=1462678665690349621&permissions=8&integration_type=0&scope=bot"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full py-3 bg-[#5865F2] text-white font-heading rounded-western hover:bg-[#4752C4] transition-colors flex items-center justify-center gap-2"
+            >
+              <Users className="w-5 h-5" />
+              Adicionar Bot ao Servidor
+            </a>
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="w-full py-3 bg-gold-500 text-leather-950 font-heading rounded-western hover:bg-gold-400 transition-colors"
+            >
+              Acessar o Painel
+            </button>
+          </div>
         </motion.div>
       </div>
     );
@@ -262,23 +324,48 @@ export function Checkout() {
             </div>
 
             {selectedPlano && !pixData && (
-              <button
-                onClick={generatePix}
-                disabled={generatingPix}
-                className="w-full mt-6 py-4 bg-gold-500 text-leather-950 font-heading rounded-western hover:bg-gold-400 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                {generatingPix ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Gerando PIX...
-                  </>
-                ) : (
-                  <>
-                    <QrCode className="w-5 h-5" />
-                    Gerar QR Code PIX
-                  </>
-                )}
-              </button>
+              <div className="mt-6 space-y-4">
+                 <div>
+                    <label htmlFor="email" className="block text-parchment-400 text-sm mb-2">E-mail (Para comprovante)</label>
+                    <input
+                      id="email"
+                      type="email"
+                      className="w-full bg-leather-800 border border-leather-600 rounded-western p-3 text-parchment-100 placeholder-leather-500 focus:border-gold-500 focus:outline-none transition-colors"
+                      placeholder="seu@email.com"
+                      onChange={(e) => setEmail(e.target.value)}
+                      value={email}
+                    />
+                 </div>
+
+                 <div>
+                    <label htmlFor="cpf" className="block text-parchment-400 text-sm mb-2">CPF do Pagador (Obrigatório para PIX)</label>
+                    <input
+                      id="cpf"
+                      type="text"
+                      className="w-full bg-leather-800 border border-leather-600 rounded-western p-3 text-parchment-100 placeholder-leather-500 focus:border-gold-500 focus:outline-none transition-colors"
+                      placeholder="000.000.000-00"
+                      onChange={(e) => setCpf(e.target.value)}
+                    />
+                 </div>
+
+                <button
+                  onClick={generatePix}
+                  disabled={generatingPix || cpf.replace(/\D/g, '').length !== 11 || !email.includes('@')}
+                  className="w-full py-4 bg-gold-500 text-leather-950 font-heading rounded-western hover:bg-gold-400 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {generatingPix ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Gerando PIX...
+                    </>
+                  ) : (
+                    <>
+                      <QrCode className="w-5 h-5" />
+                      Gerar QR Code PIX
+                    </>
+                  )}
+                </button>
+              </div>
             )}
           </motion.div>
 
