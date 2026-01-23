@@ -130,7 +130,8 @@ export function LandingPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Link
-                  to="/checkout"
+                  to="/login"
+                  state={{ from: { pathname: '/checkout' } }}
                   className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-gold-600 to-gold-500 text-leather-950 font-heading font-bold rounded-western shadow-lg hover:shadow-gold-500/25 transition-all"
                 >
                   Começar Agora
@@ -296,7 +297,8 @@ export function LandingPage() {
             </p>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Link
-                to="/checkout"
+                to="/login"
+                state={{ from: { pathname: '/checkout' } }}
                 className="inline-flex items-center gap-2 px-10 py-5 bg-gradient-to-r from-gold-600 to-gold-500 text-leather-950 font-heading font-bold text-lg rounded-western shadow-lg hover:shadow-gold-500/25 transition-all"
               >
                 Começar Agora

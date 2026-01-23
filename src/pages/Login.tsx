@@ -126,7 +126,15 @@ export function Login() {
             )}
 
             <Button
-              onClick={signInWithDiscord}
+              onClick={() => {
+                const searchParams = new URL(window.location.href).searchParams;
+                // Check props or location state for redirect
+                const from = (location.state as any)?.from?.pathname || searchParams.get('redirect');
+                if (from) {
+                  localStorage.setItem('authRedirect', from);
+                }
+                signInWithDiscord();
+              }}
               disabled={loading}
               className="w-full bg-[#5865F2] hover:bg-[#4752C4] text-white py-3 flex items-center justify-center gap-2"
             >

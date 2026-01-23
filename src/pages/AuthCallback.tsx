@@ -41,8 +41,10 @@ export function AuthCallback() {
         }
 
         if (session) {
-          // Success - redirect to home
-          navigate('/dashboard', { replace: true });
+          // Success - redirect to home or saved path
+          const redirectPath = localStorage.getItem('authRedirect');
+          localStorage.removeItem('authRedirect');
+          navigate(redirectPath || '/dashboard', { replace: true });
         } else {
           // No session - something went wrong
           throw new Error('Falha ao obter sessão após autenticação');

@@ -23,13 +23,13 @@ interface PixData {
 export function Checkout() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user, userFrontend, isLoggedIn, loading: authLoading } = useAuth();
+  const { user, userFrontend, session, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    if (!authLoading && !isLoggedIn) {
+    if (!authLoading && !session) {
       navigate('/login', { state: { from: { pathname: '/checkout' } } });
     }
-  }, [isLoggedIn, authLoading, navigate]);
+  }, [session, authLoading, navigate]);
 
   const [planos, setPlanos] = useState<Plano[]>([]);
   const [selectedPlano, setSelectedPlano] = useState<Plano | null>(null);

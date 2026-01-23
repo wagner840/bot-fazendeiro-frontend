@@ -34,6 +34,7 @@ interface AuthContextType extends AuthState {
   signInWithDiscord: () => Promise<void>;
   signOut: () => Promise<void>;
   isAuthenticated: boolean;
+  isLoggedIn: boolean;
   isSuperadmin: boolean;
   isAdmin: boolean;
   isFuncionario: boolean;
@@ -189,7 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           userFrontend,
           subscription,
           loading: false,
-          error: userFrontend ? null : 'Acesso negado. Usuário não autorizado.',
+          error: null,
         });
       } catch (err) {
         console.error(`Error fetching user frontend (${source}):`, err);
@@ -322,7 +323,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState(prev => ({
       ...prev,
       userFrontend,
-      error: userFrontend ? null : 'Acesso negado. Usuário não autorizado.',
+      error: null,
     }));
   };
 
@@ -338,6 +339,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // Computed properties
+  const isLoggedIn = !!state.session;
   const isAuthenticated = !!state.user && !!state.userFrontend;
   const isSuperadmin = state.userFrontend?.role === 'superadmin';
   const isAdmin = state.userFrontend?.role === 'admin' || isSuperadmin;
@@ -363,6 +365,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ...state,
     signInWithDiscord,
     signOut,
+    isLoggedIn,
     isAuthenticated,
     isSuperadmin,
     isAdmin,

@@ -142,7 +142,7 @@ export function Dashboard() {
               </h2>
             </CardHeader>
             <CardContent>
-              <div className="h-[300px]">
+              <div className="h-[300px] w-full" style={{ minHeight: '300px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={revenueData}>
                     <defs>
@@ -208,7 +208,7 @@ export function Dashboard() {
               </h2>
             </CardHeader>
             <CardContent>
-              <div className="h-[200px]">
+              <div className="h-[200px] w-full" style={{ minHeight: '200px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
