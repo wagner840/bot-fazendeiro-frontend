@@ -20,6 +20,7 @@ import {
   LandingPage,
   Checkout,
   AssinaturaExpirada,
+  SuperAdminTesters,
 } from './pages';
 
 
