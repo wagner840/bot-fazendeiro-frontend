@@ -10,7 +10,6 @@ import type {
   EstoqueProduto,
   DashboardStats,
 } from './types';
-
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
 
@@ -22,6 +21,12 @@ export const supabase = createClient(supabaseUrl || '', supabaseKey || '');
 
 // ============ EMPRESA FUNCTIONS ============
 
+/**
+ * Fetches all active companies.
+ * SECURITY: This query relies on Row Level Security (RLS) policies
+ * to ensure users only see companies they are authorized to access.
+ * See: pg_policies for 'empresas' table.
+ */
 export async function getEmpresas(): Promise<Empresa[]> {
   const { data, error } = await supabase
     .from('empresas')
@@ -36,33 +41,7 @@ export async function getEmpresas(): Promise<Empresa[]> {
   return data || [];
 }
 
-export async function getEmpresaById(id: number): Promise<Empresa | null> {
-  const { data, error } = await supabase
-    .from('empresas')
-    .select(`
-      *,
-      tipo_empresa:tipos_empresa(*)
-    `)
-    .eq('id', id)
-    .single();
 
-  if (error) throw error;
-  return data;
-}
-
-export async function getEmpresaByGuild(guildId: string): Promise<Empresa | null> {
-  const { data, error } = await supabase
-    .from('empresas')
-    .select(`
-      *,
-      tipo_empresa:tipos_empresa(*)
-    `)
-    .eq('guild_id', guildId)
-    .single();
-
-  if (error && error.code !== 'PGRST116') throw error;
-  return data;
-}
 
 // ============ TIPOS EMPRESA FUNCTIONS ============
 
@@ -91,51 +70,11 @@ export async function getFuncionarios(empresaId: number): Promise<Funcionario[]>
   return data || [];
 }
 
-export async function getFuncionarioById(id: number): Promise<Funcionario | null> {
-  const { data, error } = await supabase
-    .from('funcionarios')
-    .select('*')
-    .eq('id', id)
-    .single();
 
-  if (error) throw error;
-  return data;
-}
-
-export async function updateFuncionarioSaldo(id: number, novoSaldo: number): Promise<void> {
-  const { error } = await supabase
-    .from('funcionarios')
-    .update({ saldo: novoSaldo })
-    .eq('id', id);
-
-  if (error) throw error;
-}
-
-export async function createFuncionario(funcionario: Partial<Funcionario>): Promise<Funcionario> {
-  const { data, error } = await supabase
-    .from('funcionarios')
-    .insert(funcionario)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
-}
 
 // ============ PRODUTO FUNCTIONS ============
 
-export async function getProdutosReferencia(tipoEmpresaId: number): Promise<ProdutoReferencia[]> {
-  const { data, error } = await supabase
-    .from('produtos_referencia')
-    .select('*')
-    .eq('tipo_empresa_id', tipoEmpresaId)
-    .eq('ativo', true)
-    .order('categoria')
-    .order('nome');
 
-  if (error) throw error;
-  return data || [];
-}
 
 export async function getProdutosEmpresa(empresaId: number): Promise<ProdutoEmpresa[]> {
   const { data, error } = await supabase
@@ -168,14 +107,7 @@ export async function updateProdutoPreco(
   if (error) throw error;
 }
 
-export async function updateProdutoEstoque(id: number, quantidade: number): Promise<void> {
-  const { error } = await supabase
-    .from('produtos_empresa')
-    .update({ estoque_atual: quantidade })
-    .eq('id', id);
 
-  if (error) throw error;
-}
 
 // ============ ESTOQUE FUNCTIONS ============
 
@@ -191,7 +123,8 @@ export async function getEstoqueFuncionario(funcionarioId: number): Promise<Esto
   return data || [];
 }
 
-export async function getEstoqueGlobal(empresaId: number): Promise<EstoqueProduto[]> {
+export async function getEstoqueEmpresa(empresaId: number): Promise<EstoqueProduto[]> {
+  // Fetch all stock for the company to calculate values client-side
   const { data, error } = await supabase
     .from('estoque_produtos')
     .select('*')
@@ -201,6 +134,8 @@ export async function getEstoqueGlobal(empresaId: number): Promise<EstoqueProdut
   if (error) throw error;
   return data || [];
 }
+
+
 
 // ============ ENCOMENDA FUNCTIONS ============
 
@@ -218,23 +153,7 @@ export async function getEncomendas(empresaId: number): Promise<Encomenda[]> {
   return data || [];
 }
 
-export async function getEncomendasByStatus(
-  empresaId: number,
-  status: string
-): Promise<Encomenda[]> {
-  const { data, error } = await supabase
-    .from('encomendas')
-    .select(`
-      *,
-      funcionario_responsavel:funcionarios(*)
-    `)
-    .eq('empresa_id', empresaId)
-    .eq('status', status)
-    .order('data_criacao', { ascending: false });
 
-  if (error) throw error;
-  return data || [];
-}
 
 export async function updateEncomendaStatus(
   id: number,
@@ -294,13 +213,7 @@ export async function getHistoricoPagamentosFuncionario(
   return data || [];
 }
 
-export async function createPagamento(pagamento: Partial<HistoricoPagamento>): Promise<void> {
-  const { error } = await supabase
-    .from('historico_pagamentos')
-    .insert(pagamento);
 
-  if (error) throw error;
-}
 
 // ============ DASHBOARD STATS ============
 
@@ -583,3 +496,4 @@ export async function deleteEncomenda(id: number): Promise<void> {
 
   if (error) throw error;
 }
+
