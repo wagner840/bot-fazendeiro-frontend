@@ -45,7 +45,7 @@ export function Checkout() {
   useEffect(() => {
     const cpfInput = document.getElementById('cpf');
     if (cpfInput) {
-      InputMask({ mask: '999.999.999-99' }).mask(cpfInput);
+      new InputMask({ mask: '999.999.999-99' }).mask(cpfInput);
     }
   }, []);
 
