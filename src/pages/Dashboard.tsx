@@ -143,8 +143,9 @@ export function Dashboard() {
             </CardHeader>
             <CardContent>
               <div style={{ width: '100%', height: 300, minHeight: 300 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={revenueData}>
+                {!isLoading && revenueData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={revenueData}>
                     <defs>
                       <linearGradient id="colorReceita" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#d4a853" stopOpacity={0.3} />
@@ -192,8 +193,13 @@ export function Dashboard() {
                       fillOpacity={1}
                       fill="url(#colorPagamentos)"
                     />
-                  </AreaChart>
-                </ResponsiveContainer>
+                    </AreaChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-parchment-500">
+                    {isLoading ? "Carregando dados..." : "Sem dados disponíveis"}
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -209,8 +215,9 @@ export function Dashboard() {
             </CardHeader>
             <CardContent>
               <div style={{ width: '100%', height: 200, minHeight: 200 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
+                {!isLoading && categoryData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
                     <Pie
                       data={categoryData as Array<{ name: string; value: number; fill: string; [key: string]: unknown }>}
                       cx="50%"
@@ -232,8 +239,13 @@ export function Dashboard() {
                       }}
                       formatter={(value: any) => [`${value}%`, 'Distribuição']}
                     />
-                  </PieChart>
-                </ResponsiveContainer>
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-parchment-500 text-xs">
+                    {isLoading ? "Carregando..." : "Sem dados"}
+                  </div>
+                )}
               </div>
               <div className="mt-4 space-y-2">
                 {categoryData.map((cat) => (
