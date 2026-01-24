@@ -102,7 +102,7 @@ export function Sidebar() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setMobileMenuOpen(false)}
-            className="md:hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-40"
+            className="md:hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[90]"
           />
         )}
       </AnimatePresence>
@@ -112,10 +112,9 @@ export function Sidebar() {
         initial={false}
         animate={{ 
           width: (sidebarCollapsed && !mobileMenuOpen) ? 72 : 256,
-          x: mobileMenuOpen ? 0 : 0 // We handle mobile hide via class/CSS transform now, resetting x for Framer safety
         }}
         className={cn(
-          "fixed md:static inset-y-0 left-0 z-50 flex flex-col bg-leather-900/95 border-r border-leather-700/50 transition-transform duration-300 md:translate-x-0 h-screen",
+          "fixed md:static inset-y-0 left-0 z-[100] flex flex-col bg-leather-900/95 border-r border-leather-700/50 transition-transform duration-300 md:translate-x-0 h-screen",
           !mobileMenuOpen && "-translate-x-full md:translate-x-0"
         )}
       >
