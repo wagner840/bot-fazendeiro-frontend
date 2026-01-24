@@ -5,7 +5,7 @@ import { Toast } from '../ui/Toast';
 import { useApp } from '../../context/AppContext';
 
 export function Layout() {
-  const { toasts, removeToast, isLoadingEmpresas, selectedEmpresa } = useApp();
+  const { toasts, isLoadingEmpresas, selectedEmpresa } = useApp();
 
   if (isLoadingEmpresas) {
     return (
@@ -58,7 +58,7 @@ export function Layout() {
       {/* Toast Container */}
       <div className="fixed bottom-4 right-4 z-50 space-y-2">
         {toasts.map((toast) => (
-          <Toast key={toast.id} toast={toast} onClose={() => removeToast(toast.id)} />
+          <Toast key={toast.id} toast={toast} />
         ))}
       </div>
     </div>
