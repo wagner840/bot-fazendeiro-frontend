@@ -32,6 +32,8 @@ import {
   getFuncionarios,
   getEstoqueFuncionario,
   getHistoricoPagamentosFuncionario,
+  getEstoqueEmpresa,
+  getProdutosEmpresa,
 } from '../lib/supabase';
 import { filterBySearch } from '../lib/utils';
 
@@ -51,6 +53,7 @@ const item = {
 export function Funcionarios() {
   const { selectedEmpresa, addToast } = useApp();
   const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
+  const [valoresEstoque, setValoresEstoque] = useState<Record<number, number>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -71,8 +74,37 @@ export function Funcionarios() {
 
     try {
       setIsLoading(true);
-      const data = await getFuncionarios(selectedEmpresa.id);
-      setFuncionarios(data);
+      const [funcs, estoqueData, produtosData] = await Promise.all([
+        getFuncionarios(selectedEmpresa.id),
+        getEstoqueEmpresa(selectedEmpresa.id),
+        getProdutosEmpresa(selectedEmpresa.id),
+      ]);
+      
+      setFuncionarios(funcs);
+
+      // Calculate stock value per employee
+      const valores: Record<number, number> = {};
+      
+      // Create a map of product prices
+      const precosMap: Record<string, number> = {};
+      produtosData.forEach(p => {
+        if (p.produto_referencia?.codigo) {
+           precosMap[p.produto_referencia.codigo.toLowerCase()] = p.preco_pagamento_funcionario || 0;
+        }
+      });
+
+      // Sum up stock values
+      estoqueData.forEach(item => {
+        const funcId = item.funcionario_id;
+        const codigo = item.produto_codigo.toLowerCase();
+        const preco = precosMap[codigo] || 0;
+        const valor = (item.quantidade || 0) * preco;
+        
+        if (!valores[funcId]) valores[funcId] = 0;
+        valores[funcId] += valor;
+      });
+
+      setValoresEstoque(valores);
     } catch (error) {
       console.error('Error loading funcionarios:', error);
       addToast({
@@ -135,9 +167,16 @@ export function Funcionarios() {
       header: 'Saldo',
       sortable: true,
       render: (f: Funcionario) => (
-        <span className="font-heading text-gold-500">
-          {formatCurrency(f.saldo)}
-        </span>
+        <div className="flex flex-col">
+            <span className="font-heading text-gold-500">
+            {formatCurrency(f.saldo)}
+            </span>
+            {valoresEstoque[f.id] > 0 && (
+                <span className="text-xs text-parchment-500" title="Valor acumulado em estoque (não pago)">
+                    + {formatCurrency(valoresEstoque[f.id])} em estoque
+                </span>
+            )}
+        </div>
       ),
     },
     {
