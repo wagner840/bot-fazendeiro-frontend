@@ -56,49 +56,63 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     error: null,
   });
 
+  // Helper: Fetch with retry
+  const fetchUserFrontendWithRetry = async (discordId: string, retries = 3): Promise<UserFrontend | null> => {
+    for (let i = 0; i < retries; i++) {
+      try {
+        console.log(`fetchUserFrontend attempt ${i + 1}/${retries}`);
+        
+        // Use a timeout to prevent hanging (increased to 15s)
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('Query timeout after 15s')), 15000);
+        });
+
+        const queryPromise = supabase
+          .from('usuarios_frontend')
+          .select('*')
+          .eq('discord_id', discordId)
+          .eq('ativo', true)
+          .order('role', { ascending: true }) // superadmin first
+          .limit(1);
+
+        const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
+
+        if (error) {
+          if (error.code === 'PGRST116') { // User not found (valid response)
+            return null;
+          }
+          throw error; // Throw other errors to trigger retry
+        }
+
+        if (data && data.length > 0) {
+          return data[0];
+        } else {
+          return null; // Empty list = user not found
+        }
+
+      } catch (err: any) {
+        console.warn(`Attempt ${i + 1} failed:`, err);
+        const isLastAttempt = i === retries - 1;
+        
+        // Don't retry on timeout if we have a valid previous state? No, we should distinct "User Not Found" vs "Network Error"
+        if (isLastAttempt) {
+            throw err;
+        }
+        // Wait 1s before retry
+        await new Promise(r => setTimeout(r, 1000));
+      }
+    }
+    throw new Error('All retries failed');
+  };
+
   // Fetch user frontend data from usuarios_frontend table
   const fetchUserFrontend = async (discordId: string): Promise<UserFrontend | null> => {
-    console.log('fetchUserFrontend called with discordId:', discordId);
-    try {
-      console.log('Starting Supabase query...');
-
-      // Use a timeout to prevent hanging
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Query timeout after 10s')), 10000);
-      });
-
-      const queryPromise = supabase
-        .from('usuarios_frontend')
-        .select('*')
-        .eq('discord_id', discordId)
-        .eq('ativo', true)
-        .order('role', { ascending: true }) // superadmin first
-        .limit(1);
-
-      const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
-
-      console.log('Supabase query completed. Data:', data, 'Error:', error);
-
-      if (error) {
-        // User not found in usuarios_frontend - no access
-        if (error.code === 'PGRST116') {
-          console.log('User not found in usuarios_frontend (PGRST116)');
-          return null;
-        }
-        throw error;
+      try {
+          return await fetchUserFrontendWithRetry(discordId);
+      } catch (err) {
+          console.error('Final fetchUserFrontend error:', err);
+          throw err; // Propagate error so caller knows it failed
       }
-
-      // Return first result (removed .single() to avoid hanging on empty results)
-      if (data && data.length > 0) {
-        return data[0];
-      }
-
-      console.log('No user found in usuarios_frontend');
-      return null;
-    } catch (err) {
-      console.error('Error fetching user frontend:', err);
-      return null;
-    }
   };
 
   // Fetch subscription status for the user's guild
@@ -162,14 +176,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('Discord ID:', discordId);
 
       if (!discordId) {
-        setState({
-          user: session.user,
-          session,
-          userFrontend: null,
-          subscription: null,
-          loading: false,
-          error: 'Erro ao obter Discord ID.',
-        });
+        setState(prev => ({ // Keep previous state if just session refresh weirdness? No, no ID = logout basically.
+            ...prev,
+            loading: false,
+            error: 'Erro ao obter Discord ID.',
+        }));
         return;
       }
 
@@ -194,13 +205,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
       } catch (err) {
         console.error(`Error fetching user frontend (${source}):`, err);
-        setState({
-          user: session.user,
-          session,
-          userFrontend: null,
-          subscription: null,
-          loading: false,
-          error: 'Erro ao buscar dados do usuário.',
+        
+        // CRITICAL FIX: If we simply timed out or had a network error, 
+        // AND we effectively already had a valid user session, DO NOT Log them out.
+        // Just keep the old state but maybe update session.
+        setState(prev => {
+            if (prev.userFrontend) {
+                console.log('Transient error but preserving existing user session.');
+                return {
+                    ...prev,
+                    session, // Update session token
+                    // userFrontend: keep existing
+                    // subscription: keep existing
+                    loading: false,
+                };
+            }
+             // Real error and no previous state -> Access Denied / Error
+            return {
+                user: session.user,
+                session,
+                userFrontend: null,
+                subscription: null,
+                loading: false,
+                error: 'Erro de conexão/timeout. Tente recarregar.',
+            };
         });
       }
     };
