@@ -34,7 +34,11 @@ import {
   type HistoricoPagamento,
   type Funcionario,
 } from '../lib/types';
-import { getHistoricoPagamentos, getFuncionarios } from '../lib/supabase';
+import {
+  getHistoricoPagamentos,
+  getFuncionarios,
+  getRevenueChartData,
+} from '../lib/supabase';
 import { groupBy } from '../lib/utils';
 
 const container = {
@@ -50,39 +54,42 @@ const item = {
   show: { opacity: 1, y: 0 },
 };
 
-// Mock monthly data
-const monthlyData = [
-  { mes: 'Jan', receita: 12500, pagamentos: 3200, lucro: 9300 },
-  { mes: 'Fev', receita: 15800, pagamentos: 4100, lucro: 11700 },
-  { mes: 'Mar', receita: 14200, pagamentos: 3800, lucro: 10400 },
-  { mes: 'Abr', receita: 18500, pagamentos: 4900, lucro: 13600 },
-  { mes: 'Mai', receita: 16900, pagamentos: 4400, lucro: 12500 },
-  { mes: 'Jun', receita: 21200, pagamentos: 5600, lucro: 15600 },
-];
-
 export function Financeiro() {
   const { selectedEmpresa, addToast, stats } = useApp();
   const [pagamentos, setPagamentos] = useState<HistoricoPagamento[]>([]);
   const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
+  const [chartData, setChartData] = useState<{ mes: string; receita: number; pagamentos: number; lucro: number }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'year'>('month');
 
   useEffect(() => {
     loadData();
-  }, [selectedEmpresa]);
+  }, [selectedEmpresa, selectedPeriod]);
 
   async function loadData() {
+    console.log('Financeiro: Loading dynamic data...', { selectedPeriod });
     if (!selectedEmpresa) return;
 
     try {
       setIsLoading(true);
-      const [pagamentosData, funcionariosData] = await Promise.all([
+      const [pagamentosData, funcionariosData, revenueData] = await Promise.all([
         getHistoricoPagamentos(selectedEmpresa.id),
         getFuncionarios(selectedEmpresa.id),
+        getRevenueChartData(selectedEmpresa.id, selectedPeriod),
       ]);
+
+      console.log('Financeiro: Data loaded', { revenueData });
 
       setPagamentos(pagamentosData);
       setFuncionarios(funcionariosData);
+
+      // Process chart data with Profit calculation
+      const processedChartData = revenueData.map(d => ({
+        ...d,
+        lucro: d.receita - d.pagamentos
+      }));
+      setChartData(processedChartData);
+
     } catch (error) {
       console.error('Error loading financial data:', error);
       addToast({
@@ -183,7 +190,7 @@ export function Financeiro() {
       {/* Page Header */}
       <motion.div variants={item} className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-3xl text-gold-500">Financeiro</h1>
+          <h1 className="font-display text-3xl text-gold-500">Financeiro (Dinâmico)</h1>
           <p className="text-parchment-400 mt-1">
             Relatórios e histórico de {selectedEmpresa?.nome}
           </p>
@@ -285,7 +292,7 @@ export function Financeiro() {
             <CardContent>
               <div className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={monthlyData}>
+                  <AreaChart data={chartData}>
                     <defs>
                       <linearGradient id="colorReceita" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
@@ -350,7 +357,7 @@ export function Financeiro() {
             <CardContent>
               <div className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={monthlyData}>
+                  <BarChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(109, 79, 40, 0.3)" />
                     <XAxis
                       dataKey="mes"
