@@ -171,6 +171,13 @@ export interface ModalProps {
   onClose: () => void;
 }
 
+
+
+
+
+// UI Types
+
+
 // Business Type Icons Map
 export const BUSINESS_ICONS: Record<string, string> = {
   fazenda: '🌾',
