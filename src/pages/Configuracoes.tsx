@@ -2,11 +2,9 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Building2,
-  Palette,
   Database,
   RefreshCw,
   Info,
-  ExternalLink,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import {
@@ -180,64 +178,9 @@ export function Configuracoes() {
             </CardContent>
           </Card>
 
-          {/* Bot Info */}
-          <Card>
-            <CardHeader>
-              <h2 className="font-heading text-lg text-parchment-100 flex items-center gap-2">
-                <Info size={20} className="text-gold-500" />
-                Sobre o Bot
-              </h2>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-parchment-500">Versão</span>
-                  <Badge variant="gold">v2.1</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-parchment-500">Framework</span>
-                  <span className="text-sm text-parchment-300">discord.py</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-parchment-500">Database</span>
-                  <span className="text-sm text-parchment-300">Supabase</span>
-                </div>
-              </div>
 
-              <div className="divider-western" />
 
-              <a
-                href="#"
-                className="flex items-center justify-between p-3 bg-leather-800/30 rounded-western hover:bg-leather-800/50 transition-colors"
-              >
-                <span className="text-sm text-parchment-300">Documentação</span>
-                <ExternalLink size={14} className="text-gold-500" />
-              </a>
 
-              <a
-                href="#"
-                className="flex items-center justify-between p-3 bg-leather-800/30 rounded-western hover:bg-leather-800/50 transition-colors"
-              >
-                <span className="text-sm text-parchment-300">Comandos do Bot</span>
-                <ExternalLink size={14} className="text-gold-500" />
-              </a>
-            </CardContent>
-          </Card>
-
-          {/* Theme Hint */}
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <Palette className="w-5 h-5 text-gold-500" />
-              <div>
-                <p className="text-sm font-heading text-parchment-200">
-                  Tema Western
-                </p>
-                <p className="text-xs text-parchment-500">
-                  Inspirado no RDR2 Downtown
-                </p>
-              </div>
-            </div>
-          </Card>
         </motion.div>
       </div>
 
