@@ -321,15 +321,21 @@ export function LandingPage() {
               © {new Date().getFullYear()} Bot Fazendeiro. Todos os direitos reservados.
             </p>
             <div className="flex gap-6">
-              <a href="#" className="text-parchment-500 hover:text-gold-500 transition-colors text-sm">
+              <Link to="/termos-de-uso" className="text-parchment-500 hover:text-gold-500 transition-colors text-sm">
                 Termos de Uso
-              </a>
-              <a href="#" className="text-parchment-500 hover:text-gold-500 transition-colors text-sm">
+              </Link>
+              <Link to="/politica-de-privacidade" className="text-parchment-500 hover:text-gold-500 transition-colors text-sm">
                 Privacidade
-              </a>
-              <a href="#" className="text-parchment-500 hover:text-gold-500 transition-colors text-sm">
+              </Link>
+              <Link to="/quem-somos" className="text-parchment-500 hover:text-gold-500 transition-colors text-sm">
+                Quem Somos
+              </Link>
+              <Link to="/faq" className="text-parchment-500 hover:text-gold-500 transition-colors text-sm">
+                FAQ
+              </Link>
+              <Link to="/suporte" className="text-parchment-500 hover:text-gold-500 transition-colors text-sm">
                 Suporte
-              </a>
+              </Link>
             </div>
           </div>
         </div>
