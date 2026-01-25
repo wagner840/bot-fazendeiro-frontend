@@ -67,7 +67,7 @@ export function Financeiro() {
   }, [selectedEmpresa, selectedPeriod]);
 
   async function loadData() {
-    console.log('Financeiro: Loading dynamic data...', { selectedPeriod });
+
     if (!selectedEmpresa) return;
 
     try {
@@ -78,7 +78,7 @@ export function Financeiro() {
         getRevenueChartData(selectedEmpresa.id, selectedPeriod),
       ]);
 
-      console.log('Financeiro: Data loaded', { revenueData });
+
 
       setPagamentos(pagamentosData);
       setFuncionarios(funcionariosData);
