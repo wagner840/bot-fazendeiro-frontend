@@ -269,7 +269,7 @@ export function Header() {
                       <button
                         onClick={() => {
                           setShowUserMenu(false);
-                          navigate('/configuracoes');
+                          navigate('/dashboard/configuracoes');
                         }}
                         className="w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-leather-800/50 transition-colors text-parchment-300"
                       >
