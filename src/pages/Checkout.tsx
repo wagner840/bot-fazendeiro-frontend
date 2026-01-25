@@ -121,12 +121,9 @@ export function Checkout() {
   }, [pixData, paymentStatus]);
 
   const generatePix = async () => {
-    console.log('--- Debug: generatePix Start ---');
-    console.log('Selected Plan:', selectedPlano);
-    console.log('User:', user);
-    console.log('User Frontend:', userFrontend);
+
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-    console.log('API URL:', apiUrl);
+
 
     if (!selectedPlano) {
         console.error('Debug: No plan selected');
@@ -145,7 +142,7 @@ export function Checkout() {
                      user.user_metadata?.provider_id || 
                      user.identities?.find((i: any) => i.provider === 'discord')?.id;
 
-    console.log('Debug: Resolved Discord ID:', discordId);
+
 
     if (!discordId) {
       alert('Erro: ID do Discord não encontrado. Tente logar novamente.');
@@ -156,7 +153,7 @@ export function Checkout() {
 
     try {
       // Call Python Backend API to create PIX charge
-      console.log(`Debug: Fetching ${apiUrl}/api/pix/create`);
+
       const response = await fetch(`${apiUrl}/api/pix/create`, {
         method: 'POST',
         headers: {
@@ -171,7 +168,7 @@ export function Checkout() {
         }),
       });
 
-      console.log('Debug: Response status:', response.status);
+
 
       if (!response.ok) {
         const error = await response.json();
@@ -180,7 +177,7 @@ export function Checkout() {
       }
 
       const data = await response.json();
-      console.log('Debug: API Data:', data);
+
 
       setPixData({
         qrcode: data.qrcode,

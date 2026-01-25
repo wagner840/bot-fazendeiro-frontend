@@ -60,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchUserFrontendWithRetry = async (discordId: string, retries = 3): Promise<UserFrontend | null> => {
     for (let i = 0; i < retries; i++) {
       try {
-        console.log(`fetchUserFrontend attempt ${i + 1}/${retries}`);
+
         
         // Use a timeout to prevent hanging (increased to 15s)
         const timeoutPromise = new Promise<never>((_, reject) => {
@@ -158,7 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Helper to handle session
     const handleSession = async (session: Session | null, source: string) => {
-      console.log(`handleSession called from ${source}, session:`, !!session);
+
 
       if (!session?.user) {
         setState({
@@ -173,7 +173,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const discordId = getDiscordId(session.user);
-      console.log('Discord ID:', discordId);
+
 
       if (!discordId) {
         setState(prev => ({ // Keep previous state if just session refresh weirdness? No, no ID = logout basically.
@@ -186,13 +186,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       try {
         const userFrontend = await fetchUserFrontend(discordId);
-        console.log('User frontend fetched:', userFrontend);
+
 
         // Fetch subscription if user has a guild
         let subscription: SubscriptionStatus | null = null;
         if (userFrontend?.guild_id) {
           subscription = await fetchSubscription(userFrontend.guild_id);
-          console.log('Subscription fetched:', subscription);
+
         }
 
         setState({
@@ -211,7 +211,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Just keep the old state but maybe update session.
         setState(prev => {
             if (prev.userFrontend) {
-                console.log('Transient error but preserving existing user session.');
+
                 return {
                     ...prev,
                     session, // Update session token
@@ -236,7 +236,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes - set up BEFORE getting initial session
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, 'isInitialized:', isInitialized);
+
 
         if (event === 'INITIAL_SESSION') {
           // This is the initial session load - handle it
@@ -268,7 +268,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Fallback: If INITIAL_SESSION doesn't fire within 5s, manually check
     const fallbackTimeout = setTimeout(async () => {
       if (!isInitialized) {
-        console.log('Fallback: INITIAL_SESSION did not fire, checking session manually');
+
         isInitialized = true;
         try {
           const { data: { session } } = await supabase.auth.getSession();
