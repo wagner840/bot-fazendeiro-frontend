@@ -31,6 +31,7 @@ export interface ProdutoReferencia {
   preco_minimo: number;
   preco_maximo: number;
   unidade: string;
+  guild_id?: string;
   ativo: boolean;
 }
 
