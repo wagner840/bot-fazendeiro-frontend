@@ -91,6 +91,9 @@ export function Dashboard() {
           <h1 className="font-display text-3xl text-gold-500">Dashboard</h1>
           <p className="text-parchment-400 mt-1">
             Bem-vindo ao painel de controle de {selectedEmpresa.nome}
+            <span className="text-gold-500 ml-2 text-sm font-semibold px-2 py-0.5 rounded-full bg-gold-500/10 border border-gold-500/20">
+              {selectedEmpresa.tipo_empresa?.base_redm_id === 2 ? '🐉 Valiria' : '🏙️ Downtown'}
+            </span>
           </p>
         </div>
         <div className="text-right">
