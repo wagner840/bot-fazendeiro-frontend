@@ -187,7 +187,7 @@ export function GerenciarEmpresas() {
                         {empresa.nome}
                       </h3>
                       <p className="text-sm text-parchment-500">
-                        {empresa.tipo_empresa?.nome}
+                        {empresa.tipo_empresa?.nome} • {empresa.tipo_empresa?.base_redm_id === 2 ? '🐉 Valiria' : '🏙️ Downtown'}
                       </p>
                     </div>
 

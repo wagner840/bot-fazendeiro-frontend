@@ -29,7 +29,7 @@ export function SubscriptionGate({ children }: SubscriptionGateProps) {
 
   // Check subscription
   if (!hasActiveSubscription) {
-    console.log('[SubscriptionGate] Assinatura inativa ou expirada. Redirecionando...');
+
     return <Navigate to="/assinatura-expirada" replace />;
   }
 
