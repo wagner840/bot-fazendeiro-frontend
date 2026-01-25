@@ -8,6 +8,7 @@ export interface TipoEmpresa {
   cor_hex: string;
   icone: string;
   ativo: boolean;
+  base_redm_id: number;
 }
 
 export interface Empresa {

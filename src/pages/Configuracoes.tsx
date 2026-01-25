@@ -141,6 +141,15 @@ export function Configuracoes() {
                   <p className="font-heading text-parchment-300">
                     {selectedEmpresa?.tipo_empresa?.codigo || '-'}
                   </p>
+
+                </div>
+                <div className="p-4 bg-leather-800/20 rounded-western">
+                  <p className="text-xs text-parchment-500 uppercase tracking-wider mb-1">
+                    Cenário (Base REDM)
+                  </p>
+                  <p className="font-heading text-parchment-300 flex items-center gap-2">
+                    {selectedEmpresa?.tipo_empresa?.base_redm_id === 2 ? '🐉 Valiria RP' : '🏙️ Downtown RP'}
+                  </p>
                 </div>
                 <div className="p-4 bg-leather-800/20 rounded-western">
                   <p className="text-xs text-parchment-500 uppercase tracking-wider mb-1">
