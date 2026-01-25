@@ -14,3 +14,8 @@ export { LandingPage } from './LandingPage';
 export { Checkout } from './Checkout';
 export { AssinaturaExpirada } from './AssinaturaExpirada';
 export { SuperAdminTesters } from './SuperAdminTesters';
+export { TermsOfUse } from './TermsOfUse';
+export { PrivacyPolicy } from './PrivacyPolicy';
+export { Support } from './Support';
+export { AboutUs } from './AboutUs';
+export { FAQ } from './FAQ';

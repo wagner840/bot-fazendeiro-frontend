@@ -21,7 +21,13 @@ import {
   Checkout,
   AssinaturaExpirada,
   SuperAdminTesters,
+  TermsOfUse,
+  PrivacyPolicy,
+  Support,
+  AboutUs,
+  FAQ,
 } from './pages';
+import { PublicLayout } from './components/PublicLayout';
 
 
 function App() {
@@ -38,6 +44,15 @@ function App() {
             <Route path="/unauthorized" element={<Unauthorized />} />
             <Route path="/assinatura-expirada" element={<AssinaturaExpirada />} />
             <Route path="/superadmin" element={<Navigate to="/dashboard/superadmin/testers" replace />} />
+
+            {/* Institutional Routes */}
+            <Route element={<PublicLayout />}>
+              <Route path="/termos-de-uso" element={<TermsOfUse />} />
+              <Route path="/politica-de-privacidade" element={<PrivacyPolicy />} />
+              <Route path="/suporte" element={<Support />} />
+              <Route path="/quem-somos" element={<AboutUs />} />
+              <Route path="/faq" element={<FAQ />} />
+            </Route>
 
             {/* Protected routes - require auth + active subscription */}
             <Route

@@ -31,12 +31,29 @@ const item = {
 };
 
 export function Configuracoes() {
-  const { selectedEmpresa, addToast } = useApp();
+  const { selectedEmpresa, isLoadingEmpresas, addToast } = useApp();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const businessIcon = selectedEmpresa?.tipo_empresa?.codigo
     ? BUSINESS_ICONS[selectedEmpresa.tipo_empresa.codigo] || '🏢'
     : '🏢';
+
+  if (isLoadingEmpresas) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-500" />
+      </div>
+    );
+  }
+
+  if (!selectedEmpresa) {
+     return (
+        <div className="text-center py-12">
+           <h2 className="text-2xl font-display text-gold-500">Nenhuma empresa selecionada</h2>
+           <p className="text-parchment-400 mt-2">Selecione uma empresa no menu lateral para ver as configurações.</p>
+        </div>
+     );
+  }
 
   async function handleRefreshCache() {
     setIsRefreshing(true);
