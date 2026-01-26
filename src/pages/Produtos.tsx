@@ -247,8 +247,12 @@ export function Produtos() {
         codigo: produtoForm.codigo.trim(),
         nome: produtoForm.nome.trim(),
         categoria: produtoForm.categoria.trim() || null as unknown as string,
-        preco_minimo: produtoForm.preco_minimo,
-        preco_maximo: produtoForm.preco_maximo,
+        preco_minimo: typeof produtoForm.preco_minimo === 'string' 
+          ? parseFloat((produtoForm.preco_minimo as string).replace(',', '.')) 
+          : produtoForm.preco_minimo,
+        preco_maximo: typeof produtoForm.preco_maximo === 'string'
+          ? parseFloat((produtoForm.preco_maximo as string).replace(',', '.'))
+          : produtoForm.preco_maximo,
         unidade: produtoForm.unidade || 'un',
         ativo: produtoForm.ativo,
       });
@@ -875,11 +879,10 @@ export function Produtos() {
             <div>
               <label className="block text-sm text-parchment-400 mb-1">Preço Máximo *</label>
               <Input
-                type="number"
-                step="0.01"
-                min="0"
+                type="text"
+                placeholder="0,00"
                 value={produtoForm.preco_maximo}
-                onChange={(e) => setProdutoForm({ ...produtoForm, preco_maximo: parseFloat(e.target.value) || 0 })}
+                onChange={(e) => setProdutoForm({ ...produtoForm, preco_maximo: e.target.value as unknown as number })}
               />
             </div>
             <div>
