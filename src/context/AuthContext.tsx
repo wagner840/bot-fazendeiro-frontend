@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   // Helper: Fetch with retry
-  const fetchUserFrontendWithRetry = async (discordId: string, retries = 3): Promise<UserFrontend | null> => {
+  const fetchUserFrontendWithRetry = async (discordId: string, retries = 3): Promise<UserFrontend[]> => {
     for (let i = 0; i < retries; i++) {
       try {
 
@@ -72,22 +72,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .select('*')
           .eq('discord_id', discordId)
           .eq('ativo', true)
-          .order('role', { ascending: true }) // superadmin first
-          .limit(1);
+          .order('role', { ascending: true }); // superadmin first
 
         const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
 
         if (error) {
           if (error.code === 'PGRST116') { // User not found (valid response)
-            return null;
+            return [];
           }
           throw error; // Throw other errors to trigger retry
         }
 
         if (data && data.length > 0) {
-          return data[0];
+          return data; // Return all associations
         } else {
-          return null; // Empty list = user not found
+          return []; // Empty list
         }
 
       } catch (err: any) {
@@ -106,12 +105,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // Fetch user frontend data from usuarios_frontend table
-  const fetchUserFrontend = async (discordId: string): Promise<UserFrontend | null> => {
+  const fetchUserFrontends = async (discordId: string): Promise<UserFrontend[]> => {
       try {
-          return await fetchUserFrontendWithRetry(discordId);
+          return await fetchUserFrontendWithRetry(discordId) as unknown as UserFrontend[];
       } catch (err) {
-          console.error('Final fetchUserFrontend error:', err);
-          throw err; // Propagate error so caller knows it failed
+          console.error('Final fetchUserFrontends error:', err);
+          throw err;
       }
   };
 
@@ -185,21 +184,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       try {
-        const userFrontend = await fetchUserFrontend(discordId);
+        const userFrontends = await fetchUserFrontends(discordId);
+        
+        if (userFrontends.length === 0) {
+          setState({
+            user: session.user,
+            session,
+            userFrontend: null,
+            subscription: null,
+            loading: false,
+            error: null,
+          });
+          return;
+        }
 
+        // CRITICAL: Find best association (active subscription preferred)
+        let selectedUserFrontend = userFrontends[0];
+        let selectedSubscription: SubscriptionStatus | null = null;
 
-        // Fetch subscription if user has a guild
-        let subscription: SubscriptionStatus | null = null;
-        if (userFrontend?.guild_id) {
-          subscription = await fetchSubscription(userFrontend.guild_id);
-
+        for (const uf of userFrontends) {
+            if (uf.guild_id) {
+                const sub = await fetchSubscription(uf.guild_id);
+                if (sub?.ativa) {
+                    selectedUserFrontend = uf;
+                    selectedSubscription = sub;
+                    break;
+                }
+                // Backup first one if none are active
+                if (!selectedSubscription) {
+                    selectedSubscription = sub;
+                }
+            }
         }
 
         setState({
           user: session.user,
           session,
-          userFrontend,
-          subscription,
+          userFrontend: selectedUserFrontend,
+          subscription: selectedSubscription,
           loading: false,
           error: null,
         });
@@ -347,7 +369,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const discordId = getDiscordId(state.user);
     if (!discordId) return;
 
-    const userFrontend = await fetchUserFrontend(discordId);
+    const userFrontends = await fetchUserFrontends(discordId);
+    const userFrontend = userFrontends[0] || null;
     setState(prev => ({
       ...prev,
       userFrontend,
