@@ -189,9 +189,12 @@ export function Produtos() {
   async function loadAdminData() {
     if (!isAdmin) return;
     try {
+      // Filter by current base/server context if available
+      const baseRedmId = selectedEmpresa?.tipo_empresa?.base_redm_id;
+
       const [produtosRefData, tiposData] = await Promise.all([
-        getAllProdutosReferencia(),
-        getTiposEmpresa(),
+        getAllProdutosReferencia(), // Potentially filter this too in future? For now user asked about Company Types.
+        getTiposEmpresa(baseRedmId),
       ]);
       setProdutosReferencia(produtosRefData);
       setTiposEmpresa(tiposData);
@@ -204,7 +207,7 @@ export function Produtos() {
     if (isAdmin) {
       loadAdminData();
     }
-  }, [isAdmin]);
+  }, [isAdmin, selectedEmpresa]);
 
   function openCreateModal() {
     setProdutoForm({ ...emptyProdutoForm, tipo_empresa_id: tiposEmpresa[0]?.id || 0 });

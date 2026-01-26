@@ -45,12 +45,18 @@ export async function getEmpresas(): Promise<Empresa[]> {
 
 // ============ TIPOS EMPRESA FUNCTIONS ============
 
-export async function getTiposEmpresa(): Promise<TipoEmpresa[]> {
-  const { data, error } = await supabase
+export async function getTiposEmpresa(baseRedmId?: number): Promise<TipoEmpresa[]> {
+  let query = supabase
     .from('tipos_empresa')
     .select('*')
     .eq('ativo', true)
     .order('nome');
+
+  if (baseRedmId) {
+    query = query.eq('base_redm_id', baseRedmId);
+  }
+
+  const { data, error } = await query;
 
   if (error) throw error;
   return data || [];
