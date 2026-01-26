@@ -25,6 +25,7 @@ export interface AuthState {
   user: User | null;
   session: Session | null;
   userFrontend: UserFrontend | null;
+  userFrontends: UserFrontend[]; // Store all available associations
   subscription: SubscriptionStatus | null;
   loading: boolean;
   error: string | null;
@@ -42,6 +43,7 @@ interface AuthContextType extends AuthState {
   hasAccess: (requiredRole?: UserRole) => boolean;
   refreshUserFrontend: () => Promise<void>;
   refreshSubscription: () => Promise<void>;
+  switchGuild: (guildId: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -51,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user: null,
     session: null,
     userFrontend: null,
+    userFrontends: [],
     subscription: null,
     loading: true,
     error: null,
@@ -164,6 +167,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           user: null,
           session: null,
           userFrontend: null,
+          userFrontends: [],
           subscription: null,
           loading: false,
           error: null,
@@ -191,6 +195,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             user: session.user,
             session,
             userFrontend: null,
+            userFrontends: [],
             subscription: null,
             loading: false,
             error: null,
@@ -221,6 +226,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           user: session.user,
           session,
           userFrontend: selectedUserFrontend,
+          userFrontends, // Save list
           subscription: selectedSubscription,
           loading: false,
           error: null,
@@ -247,6 +253,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 user: session.user,
                 session,
                 userFrontend: null,
+                userFrontends: [],
                 subscription: null,
                 loading: false,
                 error: 'Erro de conexão/timeout. Tente recarregar.',
@@ -274,6 +281,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             user: null,
             session: null,
             userFrontend: null,
+            userFrontends: [],
             subscription: null,
             loading: false,
             error: null,
@@ -348,6 +356,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user: null,
         session: null,
         userFrontend: null,
+        userFrontends: [],
         subscription: null,
         loading: false,
         error: null,
@@ -389,6 +398,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  // Switch Guild Context
+  const switchGuild = async (guildId: string) => {
+      // Find the user association for this guild
+      const targetFrontend = state.userFrontends.find(uf => uf.guild_id === guildId);
+      
+      if (!targetFrontend) {
+          console.warn(`Guild ${guildId} not found in user associations.`);
+          return;
+      }
+
+      // If already selected, maybe just refresh subscription?
+      if (state.userFrontend?.id === targetFrontend.id && state.subscription) {
+          return; 
+      }
+
+      setState(prev => ({ ...prev, loading: true })); // Temp loading state specifically? Maybe better not to block global loading.
+
+      const subscription = await fetchSubscription(guildId);
+
+      setState(prev => ({
+          ...prev,
+          userFrontend: targetFrontend,
+          subscription: subscription,
+          loading: false
+      }));
+  };
+
   // Computed properties
   const isLoggedIn = !!state.session;
   const isAuthenticated = !!state.user && !!state.userFrontend;
@@ -425,6 +461,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     hasAccess,
     refreshUserFrontend,
     refreshSubscription,
+    switchGuild,
   };
 
   return (
