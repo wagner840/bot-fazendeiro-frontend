@@ -25,6 +25,7 @@ export interface AuthState {
   user: User | null;
   session: Session | null;
   userFrontend: UserFrontend | null;
+  userFrontends: UserFrontend[]; // Store all available associations
   subscription: SubscriptionStatus | null;
   loading: boolean;
   error: string | null;
@@ -42,6 +43,7 @@ interface AuthContextType extends AuthState {
   hasAccess: (requiredRole?: UserRole) => boolean;
   refreshUserFrontend: () => Promise<void>;
   refreshSubscription: () => Promise<void>;
+  switchGuild: (guildId: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -51,13 +53,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user: null,
     session: null,
     userFrontend: null,
+    userFrontends: [],
     subscription: null,
     loading: true,
     error: null,
   });
 
   // Helper: Fetch with retry
-  const fetchUserFrontendWithRetry = async (discordId: string, retries = 3): Promise<UserFrontend | null> => {
+  const fetchUserFrontendWithRetry = async (discordId: string, retries = 3): Promise<UserFrontend[]> => {
     for (let i = 0; i < retries; i++) {
       try {
 
@@ -72,22 +75,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .select('*')
           .eq('discord_id', discordId)
           .eq('ativo', true)
-          .order('role', { ascending: true }) // superadmin first
-          .limit(1);
+          .order('role', { ascending: true }); // superadmin first
 
         const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
 
         if (error) {
           if (error.code === 'PGRST116') { // User not found (valid response)
-            return null;
+            return [];
           }
           throw error; // Throw other errors to trigger retry
         }
 
         if (data && data.length > 0) {
-          return data[0];
+          return data; // Return all associations
         } else {
-          return null; // Empty list = user not found
+          return []; // Empty list
         }
 
       } catch (err: any) {
@@ -106,12 +108,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // Fetch user frontend data from usuarios_frontend table
-  const fetchUserFrontend = async (discordId: string): Promise<UserFrontend | null> => {
+  const fetchUserFrontends = async (discordId: string): Promise<UserFrontend[]> => {
       try {
-          return await fetchUserFrontendWithRetry(discordId);
+          return await fetchUserFrontendWithRetry(discordId) as unknown as UserFrontend[];
       } catch (err) {
-          console.error('Final fetchUserFrontend error:', err);
-          throw err; // Propagate error so caller knows it failed
+          console.error('Final fetchUserFrontends error:', err);
+          throw err;
       }
   };
 
@@ -165,6 +167,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           user: null,
           session: null,
           userFrontend: null,
+          userFrontends: [],
           subscription: null,
           loading: false,
           error: null,
@@ -185,21 +188,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       try {
-        const userFrontend = await fetchUserFrontend(discordId);
+        const userFrontends = await fetchUserFrontends(discordId);
+        
+        if (userFrontends.length === 0) {
+          setState({
+            user: session.user,
+            session,
+            userFrontend: null,
+            userFrontends: [],
+            subscription: null,
+            loading: false,
+            error: null,
+          });
+          return;
+        }
 
+        // CRITICAL: Find best association (active subscription preferred)
+        let selectedUserFrontend = userFrontends[0];
+        let selectedSubscription: SubscriptionStatus | null = null;
 
-        // Fetch subscription if user has a guild
-        let subscription: SubscriptionStatus | null = null;
-        if (userFrontend?.guild_id) {
-          subscription = await fetchSubscription(userFrontend.guild_id);
-
+        for (const uf of userFrontends) {
+            if (uf.guild_id) {
+                const sub = await fetchSubscription(uf.guild_id);
+                if (sub?.ativa) {
+                    selectedUserFrontend = uf;
+                    selectedSubscription = sub;
+                    break;
+                }
+                // Backup first one if none are active
+                if (!selectedSubscription) {
+                    selectedSubscription = sub;
+                }
+            }
         }
 
         setState({
           user: session.user,
           session,
-          userFrontend,
-          subscription,
+          userFrontend: selectedUserFrontend,
+          userFrontends, // Save list
+          subscription: selectedSubscription,
           loading: false,
           error: null,
         });
@@ -225,6 +253,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 user: session.user,
                 session,
                 userFrontend: null,
+                userFrontends: [],
                 subscription: null,
                 loading: false,
                 error: 'Erro de conexão/timeout. Tente recarregar.',
@@ -252,6 +281,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             user: null,
             session: null,
             userFrontend: null,
+            userFrontends: [],
             subscription: null,
             loading: false,
             error: null,
@@ -326,6 +356,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user: null,
         session: null,
         userFrontend: null,
+        userFrontends: [],
         subscription: null,
         loading: false,
         error: null,
@@ -347,7 +378,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const discordId = getDiscordId(state.user);
     if (!discordId) return;
 
-    const userFrontend = await fetchUserFrontend(discordId);
+    const userFrontends = await fetchUserFrontends(discordId);
+    const userFrontend = userFrontends[0] || null;
     setState(prev => ({
       ...prev,
       userFrontend,
@@ -364,6 +396,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ...prev,
       subscription,
     }));
+  };
+
+  // Switch Guild Context
+  const switchGuild = async (guildId: string) => {
+      // Find the user association for this guild
+      const targetFrontend = state.userFrontends.find(uf => uf.guild_id === guildId);
+      
+      if (!targetFrontend) {
+          console.warn(`Guild ${guildId} not found in user associations.`);
+          return;
+      }
+
+      // If already selected, maybe just refresh subscription?
+      if (state.userFrontend?.id === targetFrontend.id && state.subscription) {
+          return; 
+      }
+
+      setState(prev => ({ ...prev, loading: true })); // Temp loading state specifically? Maybe better not to block global loading.
+
+      const subscription = await fetchSubscription(guildId);
+
+      setState(prev => ({
+          ...prev,
+          userFrontend: targetFrontend,
+          subscription: subscription,
+          loading: false
+      }));
   };
 
   // Computed properties
@@ -402,6 +461,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     hasAccess,
     refreshUserFrontend,
     refreshSubscription,
+    switchGuild,
   };
 
   return (

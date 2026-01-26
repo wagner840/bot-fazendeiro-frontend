@@ -1,10 +1,40 @@
-import { Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom'; 
 import { motion } from 'framer-motion';
-import { AlertTriangle, CreditCard, LogOut } from 'lucide-react';
+import { AlertTriangle, CreditCard, LogOut, ChevronDown, Check } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useState } from 'react';
 
 export function AssinaturaExpirada() {
-  const { signOut, userFrontend } = useAuth();
+  const { signOut, userFrontend, userFrontends, switchGuild, hasActiveSubscription } = useAuth();
+  const navigate = useNavigate();
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  // If user switched to an active sub, prompt to go back
+  if (hasActiveSubscription) {
+      return (
+        <div className="min-h-screen bg-leather-950 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="max-w-md w-full bg-leather-900 border border-green-700/50 rounded-western p-8 text-center"
+          >
+            <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-6">
+              <Check className="w-10 h-10 text-green-500" />
+            </div>
+            <h2 className="font-display text-3xl text-green-500 mb-4">Assinatura Ativa!</h2>
+            <p className="text-parchment-300 mb-6">
+                O servidor selecionado possui uma assinatura válida.
+            </p>
+            <button
+                onClick={() => navigate('/dashboard')}
+                className="w-full py-3 bg-green-600 text-leather-950 font-heading rounded-western hover:bg-green-500 transition-colors"
+            >
+                Acessar Painel
+            </button>
+          </motion.div>
+        </div>
+      );
+  }
 
   return (
     <div className="min-h-screen bg-leather-950 flex items-center justify-center p-4">
@@ -26,11 +56,39 @@ export function AssinaturaExpirada() {
           Para continuar usando o bot e acessar o painel, renove sua assinatura.
         </p>
 
-        {userFrontend?.guild_id && (
-          <p className="text-parchment-500 text-sm mb-8">
-            Servidor: <span className="text-parchment-300">{userFrontend.guild_id}</span>
-          </p>
-        )}
+        <div className="mb-8 bg-leather-800/50 p-4 rounded-western border border-leather-700/50">
+            <p className="text-parchment-500 text-sm mb-2">Servidor Selecionado:</p>
+            
+            <div className="relative">
+                <button
+                    onClick={() => setShowDropdown(!showDropdown)}
+                    className="w-full flex items-center justify-between px-4 py-3 bg-leather-800 rounded-western border border-leather-600 hover:border-leather-500 transition-colors"
+                >
+                    <span className="text-parchment-200 font-medium truncate">
+                        {userFrontend?.guild_id || "Carregando..."}
+                    </span>
+                    <ChevronDown size={18} className={`text-parchment-400 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
+                </button>
+
+                {showDropdown && userFrontends.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-leather-800 border border-leather-600 rounded-western z-10 max-h-60 overflow-y-auto shadow-xl">
+                        {userFrontends.map(uf => (
+                            <button
+                                key={uf.id}
+                                onClick={() => {
+                                    if (uf.guild_id) switchGuild(uf.guild_id);
+                                    setShowDropdown(false);
+                                }}
+                                className="w-full text-left px-4 py-3 hover:bg-leather-700 text-parchment-300 border-b border-leather-700/50 last:border-0 flex items-center justify-between"
+                            >
+                                <span>{uf.guild_id}</span>
+                                {uf.id === userFrontend?.id && <Check size={16} className="text-gold-500" />}
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
 
         <div className="space-y-4">
           <Link
