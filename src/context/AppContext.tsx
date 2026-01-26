@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 import type { Empresa, Toast, DashboardStats } from '../lib/types';
 import { getEmpresas, getDashboardStats } from '../lib/supabase';
 import { generateId } from '../lib/utils';
+import { useAuth } from './AuthContext';
 
 interface AppContextType {
   // Empresa state
@@ -111,6 +112,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       loadStats();
     }
   }, [selectedEmpresa, loadStats]);
+
+  // Sync Auth Context when selected empresa changes (for multi-server support)
+  const { switchGuild, userFrontend } = useAuth(); 
+
+  useEffect(() => {
+      if (selectedEmpresa && userFrontend?.guild_id && selectedEmpresa.guild_id !== userFrontend.guild_id) {
+          switchGuild(selectedEmpresa.guild_id);
+      }
+  }, [selectedEmpresa]);
 
   const value: AppContextType = {
     empresas,
