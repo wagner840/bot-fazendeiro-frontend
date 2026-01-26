@@ -27,7 +27,7 @@ export function Header() {
     isLoadingStats,
     setMobileMenuOpen,
   } = useApp();
-  const { user, signOut, isSuperadmin, isAdmin } = useAuth();
+  const { user, signOut, isSuperadmin, isAdmin, userFrontends, switchGuild, userFrontend } = useAuth();
   const navigate = useNavigate();
 
   const [showEmpresaDropdown, setShowEmpresaDropdown] = useState(false);
@@ -262,6 +262,33 @@ export function Header() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Server Selector - Manual Override */}
+                  {userFrontends.length > 1 && (
+                      <div className="py-2 border-b border-leather-700/50">
+                          <p className="px-4 text-xs text-parchment-500 uppercase tracking-wider mb-1 font-heading">
+                              Alternar Servidor
+                          </p>
+                          {userFrontends.map(uf => (
+                              uf.guild_id && (
+                                  <button
+                                      key={uf.id}
+                                      onClick={() => {
+                                          switchGuild(uf.guild_id!);
+                                          setShowUserMenu(false);
+                                      }}
+                                      className={cn(
+                                          "w-full flex items-center justify-between px-4 py-2 hover:bg-leather-800/50 transition-colors text-left",
+                                          userFrontend?.guild_id === uf.guild_id ? "text-gold-500 font-medium" : "text-parchment-300"
+                                      )}
+                                  >
+                                      <span className="text-sm truncate">{uf.guild_id}</span>
+                                      {userFrontend?.guild_id === uf.guild_id && <Check size={14} />}
+                                  </button>
+                              )
+                          ))}
+                      </div>
+                  )}
 
                   {/* Menu Items */}
                   <div className="py-1">
