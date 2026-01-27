@@ -12,6 +12,7 @@ import {
   Trash2,
   X,
   AlertTriangle,
+  Settings,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
@@ -41,6 +42,8 @@ import {
   updateProdutoReferencia,
   deleteProdutoReferencia,
   getTiposEmpresa,
+  createProdutoEmpresa,
+  bulkUpdatePrecos,
 } from '../lib/supabase';
 
 const container = {
@@ -256,38 +259,62 @@ export function Produtos() {
     setShowDeleteModal(true);
   }
 
+  function slugify(text: string): string {
+    return text
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/g, '_')
+      .replace(/^_|_$/g, '');
+  }
+
   async function handleCreateProduto() {
-    if (!produtoForm.codigo.trim() || !produtoForm.nome.trim()) {
-      setAdminError('Código e nome são obrigatórios');
+    if (!produtoForm.nome.trim()) {
+      setAdminError('Nome é obrigatório');
+      return;
+    }
+    // Superadmin requires codigo; for regular admin it's auto-generated
+    if (isSuperadmin && !produtoForm.codigo.trim()) {
+      setAdminError('Código é obrigatório');
       return;
     }
 
     try {
       setIsSaving(true);
       setAdminError(null);
-      // Pass guild_id for RLS policy - superadmins can create global products (null guild_id)
-      // Regular admins must pass their guild_id for the product to be associated
-      const guildIdToUse = isSuperadmin ? undefined : (userFrontend?.guild_id ?? undefined);
 
-      await createProdutoReferencia({
+      const guildIdToUse = isSuperadmin ? undefined : (selectedEmpresa?.guild_id ?? undefined);
+      const codigo = isSuperadmin ? produtoForm.codigo.trim() : slugify(produtoForm.nome.trim());
+
+      const precoMinimo = typeof produtoForm.preco_minimo === 'string'
+        ? parseFloat((produtoForm.preco_minimo as string).replace(',', '.'))
+        : produtoForm.preco_minimo;
+      const precoMaximo = typeof produtoForm.preco_maximo === 'string'
+        ? parseFloat((produtoForm.preco_maximo as string).replace(',', '.'))
+        : produtoForm.preco_maximo;
+
+      const newProdRef = await createProdutoReferencia({
         tipo_empresa_id: produtoForm.tipo_empresa_id,
-        codigo: produtoForm.codigo.trim(),
+        codigo,
         nome: produtoForm.nome.trim(),
         categoria: produtoForm.categoria.trim() || null as unknown as string,
-        preco_minimo: typeof produtoForm.preco_minimo === 'string'
-          ? parseFloat((produtoForm.preco_minimo as string).replace(',', '.'))
-          : produtoForm.preco_minimo,
-        preco_maximo: typeof produtoForm.preco_maximo === 'string'
-          ? parseFloat((produtoForm.preco_maximo as string).replace(',', '.'))
-          : produtoForm.preco_maximo,
-        unidade: produtoForm.unidade || 'un',
-        ativo: produtoForm.ativo,
+        preco_minimo: precoMinimo,
+        preco_maximo: precoMaximo,
+        unidade: isSuperadmin ? (produtoForm.unidade || 'un') : 'un',
+        ativo: isSuperadmin ? produtoForm.ativo : true,
         guild_id: guildIdToUse,
       });
 
+      // Non-superadmin: auto-create produtos_empresa entry
+      if (!isSuperadmin && selectedEmpresa) {
+        const precoVenda = precoMinimo;
+        const precoPagamento = Math.round(precoVenda * 0.25 * 100) / 100;
+        await createProdutoEmpresa(selectedEmpresa.id, newProdRef.id, precoVenda, precoPagamento);
+      }
+
       setAdminSuccess('Produto criado com sucesso!');
       setShowCreateModal(false);
-      loadAdminData();
+      if (isSuperadmin) loadAdminData();
       loadData();
       setTimeout(() => setAdminSuccess(null), 3000);
     } catch (err: unknown) {
@@ -298,6 +325,30 @@ export function Produtos() {
       } else {
         setAdminError('Erro ao criar produto');
       }
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  // Quick Price Buttons
+  async function handleBulkPrecos(mode: 'min' | 'medio' | 'max') {
+    if (!selectedEmpresa) return;
+    const labels = { min: 'Mínimo', medio: 'Médio', max: 'Máximo' };
+    try {
+      setIsSaving(true);
+      const count = await bulkUpdatePrecos(selectedEmpresa.id, mode);
+      addToast({
+        type: 'success',
+        title: `Preços configurados: ${labels[mode]}`,
+        message: `${count} produtos atualizados com sucesso.`,
+      });
+      loadData();
+    } catch (error) {
+      console.error('Error bulk updating prices:', error);
+      addToast({
+        type: 'error',
+        title: 'Erro ao configurar preços',
+      });
     } finally {
       setIsSaving(false);
     }
@@ -496,6 +547,40 @@ export function Produtos() {
           </Button>
         )}
       </motion.div>
+
+      {/* Quick Price Buttons */}
+      {isAdmin && (
+        <motion.div variants={item} className="flex items-center gap-3 flex-wrap">
+          <span className="text-sm text-parchment-500 flex items-center gap-1">
+            <Settings size={14} />
+            Config. Rápida de Preços:
+          </span>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => handleBulkPrecos('min')}
+            isLoading={isSaving}
+          >
+            Config. Mínimo
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => handleBulkPrecos('medio')}
+            isLoading={isSaving}
+          >
+            Config. Médio
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => handleBulkPrecos('max')}
+            isLoading={isSaving}
+          >
+            Config. Máximo
+          </Button>
+        </motion.div>
+      )}
 
       {/* Admin Alerts */}
       <AnimatePresence>
@@ -847,108 +932,150 @@ export function Produtos() {
       </Modal>
 
       {/* Admin Create Product Modal */}
-      <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} title="Novo Produto de Referência" size="lg">
+      <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} title={isSuperadmin ? "Novo Produto de Referência" : "Novo Produto"} size={isSuperadmin ? "lg" : "md"}>
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm text-parchment-400 mb-1">Tipo de Empresa *</label>
-              {isSuperadmin ? (
-                <select
-                  value={produtoForm.tipo_empresa_id}
-                  onChange={(e) => setProdutoForm({ ...produtoForm, tipo_empresa_id: Number(e.target.value) })}
-                  className="input-western w-full"
-                >
-                  {tiposEmpresa.map((tipo) => (
-                    <option key={tipo.id} value={tipo.id}>
-                      {tipo.icone} {tipo.nome}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <select
-                  value={produtoForm.tipo_empresa_id}
-                  disabled
-                  className="input-western w-full opacity-60"
-                >
-                  {tiposEmpresa.filter(t => t.id === selectedEmpresa?.tipo_empresa_id).map((tipo) => (
-                    <option key={tipo.id} value={tipo.id}>
-                      {tipo.icone} {tipo.nome}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm text-parchment-400 mb-1">Código *</label>
-              <Input
-                value={produtoForm.codigo}
-                onChange={(e) => setProdutoForm({ ...produtoForm, codigo: e.target.value })}
-                placeholder="Ex: CARNE_BOVINA"
-              />
-            </div>
-          </div>
+          {isSuperadmin ? (
+            <>
+              {/* Full form for superadmin */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-parchment-400 mb-1">Tipo de Empresa *</label>
+                  <select
+                    value={produtoForm.tipo_empresa_id}
+                    onChange={(e) => setProdutoForm({ ...produtoForm, tipo_empresa_id: Number(e.target.value) })}
+                    className="input-western w-full"
+                  >
+                    {tiposEmpresa.map((tipo) => (
+                      <option key={tipo.id} value={tipo.id}>
+                        {tipo.icone} {tipo.nome}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm text-parchment-400 mb-1">Código *</label>
+                  <Input
+                    value={produtoForm.codigo}
+                    onChange={(e) => setProdutoForm({ ...produtoForm, codigo: e.target.value })}
+                    placeholder="Ex: CARNE_BOVINA"
+                  />
+                </div>
+              </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm text-parchment-400 mb-1">Nome *</label>
-              <Input
-                value={produtoForm.nome}
-                onChange={(e) => setProdutoForm({ ...produtoForm, nome: e.target.value })}
-                placeholder="Ex: Carne Bovina"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-parchment-400 mb-1">Categoria</label>
-              <Input
-                value={produtoForm.categoria}
-                onChange={(e) => setProdutoForm({ ...produtoForm, categoria: e.target.value })}
-                placeholder="Ex: Carnes"
-              />
-            </div>
-          </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-parchment-400 mb-1">Nome *</label>
+                  <Input
+                    value={produtoForm.nome}
+                    onChange={(e) => setProdutoForm({ ...produtoForm, nome: e.target.value })}
+                    placeholder="Ex: Carne Bovina"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-parchment-400 mb-1">Categoria</label>
+                  <Input
+                    value={produtoForm.categoria}
+                    onChange={(e) => setProdutoForm({ ...produtoForm, categoria: e.target.value })}
+                    placeholder="Ex: Carnes"
+                  />
+                </div>
+              </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm text-parchment-400 mb-1">Preço Mínimo *</label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                value={produtoForm.preco_minimo}
-                onChange={(e) => setProdutoForm({ ...produtoForm, preco_minimo: parseFloat(e.target.value) || 0 })}
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-parchment-400 mb-1">Preço Máximo *</label>
-              <Input
-                type="text"
-                placeholder="0,00"
-                value={produtoForm.preco_maximo}
-                onChange={(e) => setProdutoForm({ ...produtoForm, preco_maximo: e.target.value as unknown as number })}
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-parchment-400 mb-1">Unidade</label>
-              <Input
-                value={produtoForm.unidade}
-                onChange={(e) => setProdutoForm({ ...produtoForm, unidade: e.target.value })}
-                placeholder="un"
-              />
-            </div>
-          </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm text-parchment-400 mb-1">Preço Mínimo *</label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={produtoForm.preco_minimo}
+                    onChange={(e) => setProdutoForm({ ...produtoForm, preco_minimo: parseFloat(e.target.value) || 0 })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-parchment-400 mb-1">Preço Máximo *</label>
+                  <Input
+                    type="text"
+                    placeholder="0,00"
+                    value={produtoForm.preco_maximo}
+                    onChange={(e) => setProdutoForm({ ...produtoForm, preco_maximo: e.target.value as unknown as number })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-parchment-400 mb-1">Unidade</label>
+                  <Input
+                    value={produtoForm.unidade}
+                    onChange={(e) => setProdutoForm({ ...produtoForm, unidade: e.target.value })}
+                    placeholder="un"
+                  />
+                </div>
+              </div>
 
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="ativo-create"
-              checked={produtoForm.ativo}
-              onChange={(e) => setProdutoForm({ ...produtoForm, ativo: e.target.checked })}
-              className="w-4 h-4"
-            />
-            <label htmlFor="ativo-create" className="text-sm text-parchment-400">
-              Produto ativo
-            </label>
-          </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="ativo-create"
+                  checked={produtoForm.ativo}
+                  onChange={(e) => setProdutoForm({ ...produtoForm, ativo: e.target.checked })}
+                  className="w-4 h-4"
+                />
+                <label htmlFor="ativo-create" className="text-sm text-parchment-400">
+                  Produto ativo
+                </label>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Simplified form for regular admin */}
+              <div>
+                <label className="block text-sm text-parchment-400 mb-1">Nome do Produto *</label>
+                <Input
+                  value={produtoForm.nome}
+                  onChange={(e) => setProdutoForm({ ...produtoForm, nome: e.target.value })}
+                  placeholder="Ex: Carne Bovina"
+                />
+                <p className="text-xs text-parchment-600 mt-1">
+                  Código gerado automaticamente: {produtoForm.nome.trim() ? slugify(produtoForm.nome.trim()) : '—'}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-parchment-400 mb-1">Preço Mínimo *</label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={produtoForm.preco_minimo}
+                    onChange={(e) => setProdutoForm({ ...produtoForm, preco_minimo: parseFloat(e.target.value) || 0 })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-parchment-400 mb-1">Preço Máximo *</label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={produtoForm.preco_maximo}
+                    onChange={(e) => setProdutoForm({ ...produtoForm, preco_maximo: parseFloat(e.target.value) || 0 })}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm text-parchment-400 mb-1">Categoria</label>
+                <Input
+                  value={produtoForm.categoria}
+                  onChange={(e) => setProdutoForm({ ...produtoForm, categoria: e.target.value })}
+                  placeholder="Ex: Carnes (opcional)"
+                />
+              </div>
+
+              <div className="p-3 bg-leather-800/20 rounded-western border border-leather-700/30 text-xs text-parchment-500">
+                O produto será adicionado ao catálogo com preço de venda = preço mínimo e pagamento = 25%.
+              </div>
+            </>
+          )}
 
           {adminError && (
             <div className="p-3 bg-rust-900/30 border border-rust-700 rounded-western text-rust-400 text-sm">
