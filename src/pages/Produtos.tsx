@@ -187,13 +187,13 @@ export function Produtos() {
   // ============ ADMIN CRUD FUNCTIONS ============
 
   async function loadAdminData() {
-    if (!isAdmin) return;
+    if (!isSuperadmin) return;
     try {
       // Filter by current base/server context if available
       const baseRedmId = selectedEmpresa?.tipo_empresa?.base_redm_id;
 
       const [produtosRefData, tiposData] = await Promise.all([
-        getAllProdutosReferencia(), // Potentially filter this too in future? For now user asked about Company Types.
+        getAllProdutosReferencia(),
         getTiposEmpresa(baseRedmId),
       ]);
       setProdutosReferencia(produtosRefData);
@@ -204,13 +204,33 @@ export function Produtos() {
   }
 
   useEffect(() => {
-    if (isAdmin) {
+    if (isSuperadmin) {
       loadAdminData();
     }
-  }, [isAdmin, selectedEmpresa]);
+  }, [isSuperadmin, selectedEmpresa]);
+
+  async function loadAdminTiposEmpresa() {
+    if (!isAdmin || isSuperadmin) return; // superadmin uses loadAdminData
+    try {
+      const baseRedmId = selectedEmpresa?.tipo_empresa?.base_redm_id;
+      const tiposData = await getTiposEmpresa(baseRedmId);
+      setTiposEmpresa(tiposData);
+    } catch (error) {
+      console.error('Error loading tipos empresa for admin:', error);
+    }
+  }
+
+  useEffect(() => {
+    if (isAdmin && !isSuperadmin) {
+      loadAdminTiposEmpresa();
+    }
+  }, [isAdmin, isSuperadmin, selectedEmpresa]);
 
   function openCreateModal() {
-    setProdutoForm({ ...emptyProdutoForm, tipo_empresa_id: tiposEmpresa[0]?.id || 0 });
+    const defaultTipoId = (!isSuperadmin && selectedEmpresa?.tipo_empresa_id)
+      ? selectedEmpresa.tipo_empresa_id
+      : (tiposEmpresa[0]?.id || 0);
+    setProdutoForm({ ...emptyProdutoForm, tipo_empresa_id: defaultTipoId });
     setShowCreateModal(true);
     setAdminError(null);
   }
@@ -644,7 +664,7 @@ export function Produtos() {
       </motion.div>
 
       {/* Admin Section - Produtos de Referência */}
-      {isAdmin && produtosReferencia.length > 0 && (
+      {isSuperadmin && produtosReferencia.length > 0 && (
         <motion.div variants={item}>
           <Card>
             <CardHeader>
@@ -832,17 +852,31 @@ export function Produtos() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-parchment-400 mb-1">Tipo de Empresa *</label>
-              <select
-                value={produtoForm.tipo_empresa_id}
-                onChange={(e) => setProdutoForm({ ...produtoForm, tipo_empresa_id: Number(e.target.value) })}
-                className="input-western w-full"
-              >
-                {tiposEmpresa.map((tipo) => (
-                  <option key={tipo.id} value={tipo.id}>
-                    {tipo.icone} {tipo.nome}
-                  </option>
-                ))}
-              </select>
+              {isSuperadmin ? (
+                <select
+                  value={produtoForm.tipo_empresa_id}
+                  onChange={(e) => setProdutoForm({ ...produtoForm, tipo_empresa_id: Number(e.target.value) })}
+                  className="input-western w-full"
+                >
+                  {tiposEmpresa.map((tipo) => (
+                    <option key={tipo.id} value={tipo.id}>
+                      {tipo.icone} {tipo.nome}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <select
+                  value={produtoForm.tipo_empresa_id}
+                  disabled
+                  className="input-western w-full opacity-60"
+                >
+                  {tiposEmpresa.filter(t => t.id === selectedEmpresa?.tipo_empresa_id).map((tipo) => (
+                    <option key={tipo.id} value={tipo.id}>
+                      {tipo.icone} {tipo.nome}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
             <div>
               <label className="block text-sm text-parchment-400 mb-1">Código *</label>

@@ -503,17 +503,24 @@ export async function getCategorias(empresaId: number): Promise<string[]> {
 
 // ============ ADMIN: PRODUTOS REFERENCIA CRUD ============
 
-export async function getAllProdutosReferencia(): Promise<ProdutoReferencia[]> {
-  const { data, error } = await supabase
+export async function getAllProdutosReferencia(guildId?: string): Promise<ProdutoReferencia[]> {
+  let query = supabase
     .from('produtos_referencia')
     .select(`
       *,
       tipo_empresa:tipos_empresa(*)
-    `)
+    `);
+
+  if (guildId) {
+    query = query.or(`guild_id.is.null,guild_id.eq.${guildId}`);
+  }
+
+  query = query
     .order('tipo_empresa_id')
     .order('categoria')
     .order('nome');
 
+  const { data, error } = await query;
   if (error) throw error;
   return data || [];
 }
