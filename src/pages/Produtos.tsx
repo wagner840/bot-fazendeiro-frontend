@@ -84,7 +84,7 @@ const emptyProdutoForm: ProdutoRefForm = {
 
 export function Produtos() {
   const { selectedEmpresa, addToast } = useApp();
-  const { isAdmin, userFrontend, isSuperadmin } = useAuth();
+  const { isAdmin, isSuperadmin } = useAuth();
   const [produtos, setProdutos] = useState<ProdutoEmpresa[]>([]);
   const [categorias, setCategorias] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
