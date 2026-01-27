@@ -266,8 +266,8 @@ export function Produtos() {
       setIsSaving(true);
       setAdminError(null);
       // Pass guild_id for RLS policy - superadmins can create global products (null guild_id)
-      // Regular admins must pass their guild_id for the product to be associated
-      const guildIdToUse = isSuperadmin ? undefined : (userFrontend?.guild_id ?? undefined);
+      // Regular admins must use the selected empresa's guild_id
+      const guildIdToUse = isSuperadmin ? undefined : (selectedEmpresa?.guild_id ?? undefined);
 
       await createProdutoReferencia({
         tipo_empresa_id: produtoForm.tipo_empresa_id,
