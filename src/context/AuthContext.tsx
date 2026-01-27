@@ -203,21 +203,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        // CRITICAL: Find best association (active subscription preferred)
+        // Check if user previously selected a guild (persisted in localStorage)
+        const savedGuildId = localStorage.getItem('selectedGuildId');
+
+        // CRITICAL: Find best association (saved preference > active subscription > first)
         let selectedUserFrontend = userFrontends[0];
         let selectedSubscription: SubscriptionStatus | null = null;
 
-        for (const uf of userFrontends) {
-            if (uf.guild_id) {
-                const sub = await fetchSubscription(uf.guild_id);
-                if (sub?.ativa) {
-                    selectedUserFrontend = uf;
-                    selectedSubscription = sub;
-                    break;
-                }
-                // Backup first one if none are active
-                if (!selectedSubscription) {
-                    selectedSubscription = sub;
+        // If user had a saved preference, try to use it first
+        if (savedGuildId) {
+            const savedFrontend = userFrontends.find(uf => uf.guild_id === savedGuildId);
+            if (savedFrontend) {
+                const sub = await fetchSubscription(savedGuildId);
+                selectedUserFrontend = savedFrontend;
+                selectedSubscription = sub;
+            }
+        }
+
+        // If no saved preference matched, find first with active subscription
+        if (!selectedSubscription || !selectedSubscription.ativa) {
+            for (const uf of userFrontends) {
+                if (uf.guild_id) {
+                    const sub = await fetchSubscription(uf.guild_id);
+                    if (sub?.ativa) {
+                        selectedUserFrontend = uf;
+                        selectedSubscription = sub;
+                        break;
+                    }
+                    // Backup first one if none are active
+                    if (!selectedSubscription) {
+                        selectedSubscription = sub;
+                    }
                 }
             }
         }
@@ -352,6 +368,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
 
+      // Clear persisted guild selection
+      localStorage.removeItem('selectedGuildId');
+
       setState({
         user: null,
         session: null,
@@ -379,10 +398,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!discordId) return;
 
     const userFrontends = await fetchUserFrontends(discordId);
-    const userFrontend = userFrontends[0] || null;
+    // Keep current selection if still valid, otherwise pick first
+    const currentGuildId = state.userFrontend?.guild_id;
+    const userFrontend = userFrontends.find(uf => uf.guild_id === currentGuildId) || userFrontends[0] || null;
     setState(prev => ({
       ...prev,
       userFrontend,
+      userFrontends,
       error: null,
     }));
   };
@@ -402,20 +424,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const switchGuild = async (guildId: string) => {
       // Find the user association for this guild
       const targetFrontend = state.userFrontends.find(uf => uf.guild_id === guildId);
-      
+
       if (!targetFrontend) {
           console.warn(`Guild ${guildId} not found in user associations.`);
           return;
       }
 
-      // If already selected, maybe just refresh subscription?
+      // If already selected, skip
       if (state.userFrontend?.id === targetFrontend.id && state.subscription) {
-          return; 
+          return;
       }
 
-      setState(prev => ({ ...prev, loading: true })); // Temp loading state specifically? Maybe better not to block global loading.
+      setState(prev => ({ ...prev, loading: true }));
 
       const subscription = await fetchSubscription(guildId);
+
+      // Persist choice so it survives page refresh
+      localStorage.setItem('selectedGuildId', guildId);
 
       setState(prev => ({
           ...prev,

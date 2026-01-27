@@ -100,7 +100,10 @@ export function AssinaturaExpirada() {
           </Link>
 
           <button
-            onClick={signOut}
+            onClick={async () => {
+              await signOut();
+              navigate('/login', { replace: true });
+            }}
             className="w-full py-3 bg-leather-800 text-parchment-300 font-heading rounded-western border border-leather-600 hover:border-leather-500 transition-colors flex items-center justify-center gap-2"
           >
             <LogOut className="w-5 h-5" />
