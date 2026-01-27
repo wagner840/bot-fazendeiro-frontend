@@ -224,7 +224,42 @@ export async function getHistoricoPagamentosFuncionario(
 // ============ DASHBOARD STATS ============
 
 export async function getDashboardStats(empresaId: number): Promise<DashboardStats> {
-  // Get funcionarios count and total saldo
+  // Use server-side RPC for a single optimized query
+  const { data, error } = await supabase.rpc('get_dashboard_stats', {
+    p_empresa_id: empresaId,
+  });
+
+  if (error) {
+    console.error('Error fetching dashboard stats via RPC:', error);
+    // Fallback to manual queries if RPC not available
+    return getDashboardStatsFallback(empresaId);
+  }
+
+  if (data && data.length > 0) {
+    const stats = data[0];
+    return {
+      totalFuncionarios: stats.total_funcionarios || 0,
+      totalProdutos: stats.total_produtos || 0,
+      valorEstoqueTotal: stats.valor_estoque_total || 0,
+      saldoTotalFuncionarios: stats.saldo_total_funcionarios || 0,
+      encomendasPendentes: stats.encomendas_pendentes || 0,
+      encomendasEntregues: stats.encomendas_entregues || 0,
+      receitaMensal: stats.receita_mensal || 0,
+    };
+  }
+
+  return {
+    totalFuncionarios: 0,
+    totalProdutos: 0,
+    valorEstoqueTotal: 0,
+    saldoTotalFuncionarios: 0,
+    encomendasPendentes: 0,
+    encomendasEntregues: 0,
+    receitaMensal: 0,
+  };
+}
+
+async function getDashboardStatsFallback(empresaId: number): Promise<DashboardStats> {
   const { data: funcionarios } = await supabase
     .from('funcionarios')
     .select('saldo')
@@ -234,7 +269,6 @@ export async function getDashboardStats(empresaId: number): Promise<DashboardSta
   const totalFuncionarios = funcionarios?.length || 0;
   const saldoTotalFuncionarios = funcionarios?.reduce((sum, f) => sum + (f.saldo || 0), 0) || 0;
 
-  // Get produtos count and estoque value
   const { data: produtos } = await supabase
     .from('produtos_empresa')
     .select('estoque_atual, preco_venda')
@@ -245,7 +279,6 @@ export async function getDashboardStats(empresaId: number): Promise<DashboardSta
   const valorEstoqueTotal =
     produtos?.reduce((sum, p) => sum + (p.estoque_atual || 0) * (p.preco_venda || 0), 0) || 0;
 
-  // Get encomendas stats
   const { data: encomendas } = await supabase
     .from('encomendas')
     .select('status, valor_total, data_criacao')
@@ -255,7 +288,6 @@ export async function getDashboardStats(empresaId: number): Promise<DashboardSta
     encomendas?.filter((e) => e.status === 'pendente' || e.status === 'em_andamento').length || 0;
   const encomendasEntregues = encomendas?.filter((e) => e.status === 'entregue').length || 0;
 
-  // Calculate monthly revenue (last 30 days)
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   const receitaMensal =
