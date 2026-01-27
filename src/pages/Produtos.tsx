@@ -81,7 +81,7 @@ const emptyProdutoForm: ProdutoRefForm = {
 
 export function Produtos() {
   const { selectedEmpresa, addToast } = useApp();
-  const { isAdmin } = useAuth();
+  const { isAdmin, userFrontend, isSuperadmin } = useAuth();
   const [produtos, setProdutos] = useState<ProdutoEmpresa[]>([]);
   const [categorias, setCategorias] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -245,19 +245,24 @@ export function Produtos() {
     try {
       setIsSaving(true);
       setAdminError(null);
+      // Pass guild_id for RLS policy - superadmins can create global products (null guild_id)
+      // Regular admins must pass their guild_id for the product to be associated
+      const guildIdToUse = isSuperadmin ? undefined : (userFrontend?.guild_id ?? undefined);
+
       await createProdutoReferencia({
         tipo_empresa_id: produtoForm.tipo_empresa_id,
         codigo: produtoForm.codigo.trim(),
         nome: produtoForm.nome.trim(),
         categoria: produtoForm.categoria.trim() || null as unknown as string,
-        preco_minimo: typeof produtoForm.preco_minimo === 'string' 
-          ? parseFloat((produtoForm.preco_minimo as string).replace(',', '.')) 
+        preco_minimo: typeof produtoForm.preco_minimo === 'string'
+          ? parseFloat((produtoForm.preco_minimo as string).replace(',', '.'))
           : produtoForm.preco_minimo,
         preco_maximo: typeof produtoForm.preco_maximo === 'string'
           ? parseFloat((produtoForm.preco_maximo as string).replace(',', '.'))
           : produtoForm.preco_maximo,
         unidade: produtoForm.unidade || 'un',
         ativo: produtoForm.ativo,
+        guild_id: guildIdToUse,
       });
 
       setAdminSuccess('Produto criado com sucesso!');
