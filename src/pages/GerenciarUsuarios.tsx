@@ -233,15 +233,15 @@ export function GerenciarUsuarios() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl text-gold-500">Gerenciar Usuários</h1>
-          <p className="text-parchment-400 mt-1">
+          <h1 className="font-display text-2xl sm:text-3xl text-gold-500">Gerenciar Usuários</h1>
+          <p className="text-parchment-400 mt-1 text-sm sm:text-base">
             Controle de acesso ao sistema
           </p>
         </div>
 
         <Button
           onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 w-full sm:w-auto"
         >
           <UserPlus className="w-4 h-4" />
           Novo Usuário
@@ -485,14 +485,15 @@ export function GerenciarUsuarios() {
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 mt-6">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 mt-6">
             <Button
               variant="outline"
               onClick={() => setShowCreateModal(false)}
+              className="w-full sm:w-auto"
             >
               Cancelar
             </Button>
-            <Button onClick={handleCreateUser}>
+            <Button onClick={handleCreateUser} className="w-full sm:w-auto">
               <UserPlus className="w-4 h-4 mr-2" />
               Adicionar
             </Button>
@@ -518,16 +519,17 @@ export function GerenciarUsuarios() {
             Esta ação não pode ser desfeita.
           </p>
 
-          <div className="flex justify-center gap-3">
+          <div className="flex flex-col-reverse sm:flex-row justify-center gap-2 sm:gap-3">
             <Button
               variant="outline"
               onClick={() => setShowDeleteModal(false)}
+              className="w-full sm:w-auto"
             >
               Cancelar
             </Button>
             <Button
               onClick={handleDeleteUser}
-              className="bg-rust-600 hover:bg-rust-700"
+              className="bg-rust-600 hover:bg-rust-700 w-full sm:w-auto"
             >
               <Trash2 className="w-4 h-4 mr-2" />
               Remover
