@@ -238,13 +238,13 @@
 
   /* Card Header with border accent */
   .card-header-western {
-    @apply flex items-center justify-between px-6 py-4;
+    @apply flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 sm:px-6 py-4;
     @apply border-b border-leather-700/50;
     @apply bg-gradient-to-r from-leather-800/50 to-transparent;
   }
 
   .card-header-western h2 {
-    @apply font-heading text-lg font-semibold text-parchment-100;
+    @apply font-heading text-base sm:text-lg font-semibold text-parchment-100;
   }
 
   /* Animation utilities */
@@ -275,11 +275,11 @@
 
   /* Tabs */
   .tabs-western {
-    @apply flex gap-1 p-1 bg-leather-900/50 rounded-western;
+    @apply flex gap-1 p-1 bg-leather-900/50 rounded-western overflow-x-auto;
   }
 
   .tab-western {
-    @apply px-4 py-2 font-heading text-sm text-parchment-400 rounded-western;
+    @apply px-3 sm:px-4 py-2 font-heading text-xs sm:text-sm text-parchment-400 rounded-western whitespace-nowrap;
     @apply transition-all duration-200;
     @apply hover:text-parchment-200;
   }

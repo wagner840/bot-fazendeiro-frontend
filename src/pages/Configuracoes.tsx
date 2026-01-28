@@ -76,8 +76,8 @@ export function Configuracoes() {
     >
       {/* Page Header */}
       <motion.div variants={item}>
-        <h1 className="font-display text-3xl text-gold-500">Configurações</h1>
-        <p className="text-parchment-400 mt-1">
+        <h1 className="font-display text-2xl sm:text-3xl text-gold-500">Configurações</h1>
+        <p className="text-parchment-400 mt-1 text-sm sm:text-base">
           Configurações e informações da empresa
         </p>
       </motion.div>
@@ -94,22 +94,22 @@ export function Configuracoes() {
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Company Display */}
-              <div className="flex items-center gap-6 p-6 bg-leather-800/30 rounded-western">
-                <div className="w-20 h-20 rounded-western bg-gradient-to-br from-leather-700 to-leather-800 flex items-center justify-center text-4xl shadow-western-lg">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 p-4 sm:p-6 bg-leather-800/30 rounded-western text-center sm:text-left">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-western bg-gradient-to-br from-leather-700 to-leather-800 flex items-center justify-center text-3xl sm:text-4xl shadow-western-lg shrink-0">
                   {businessIcon}
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-display text-2xl text-gold-500">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-display text-xl sm:text-2xl text-gold-500 break-words">
                     {selectedEmpresa?.nome || 'Empresa'}
                   </h3>
-                  <p className="text-parchment-400 mt-1">
+                  <p className="text-parchment-400 mt-1 text-sm sm:text-base">
                     {selectedEmpresa?.tipo_empresa?.nome}
                   </p>
-                  <div className="flex items-center gap-4 mt-3">
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-4 mt-3">
                     <Badge variant="gold">
                       {selectedEmpresa?.ativo ? 'Ativo' : 'Inativo'}
                     </Badge>
-                    <span className="text-sm text-parchment-500">
+                    <span className="text-xs sm:text-sm text-parchment-500">
                       Desde: {selectedEmpresa?.data_criacao ? formatDate(selectedEmpresa.data_criacao) : '-'}
                     </span>
                   </div>

@@ -369,17 +369,17 @@ export function Auditoria() {
       className="space-y-6"
     >
       {/* Page Header */}
-      <motion.div variants={item} className="flex items-center justify-between">
+      <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl text-gold-500">Auditoria de Pagamentos</h1>
-          <p className="text-parchment-400 mt-1">
+          <h1 className="font-display text-2xl sm:text-3xl text-gold-500">Auditoria de Pagamentos</h1>
+          <p className="text-parchment-400 mt-1 text-sm sm:text-base">
             Acompanhe o historico financeiro de {selectedEmpresa?.nome}
           </p>
         </div>
       </motion.div>
 
       {/* Stats */}
-      <motion.div variants={item} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <motion.div variants={item} className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card className="p-4">
           <div className="flex items-center gap-3">
             <div className="p-3 rounded-western bg-leather-800/50">
@@ -450,44 +450,46 @@ export function Auditoria() {
         <Card>
           <CardHeader
             action={
-              <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto flex-wrap">
                 {activeTab === 'historico' && (
                   <>
-                    <select
-                      value={filterFuncionario || ''}
-                      onChange={(e) =>
-                        setFilterFuncionario(e.target.value ? Number(e.target.value) : null)
-                      }
-                      className="input-western py-2 text-sm"
-                    >
-                      <option value="">Todos funcionarios</option>
-                      {auditoriaFuncionarios.map((f) => (
-                        <option key={f.funcionario_id} value={f.funcionario_id}>
-                          {f.nome}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+                      <select
+                        value={filterFuncionario || ''}
+                        onChange={(e) =>
+                          setFilterFuncionario(e.target.value ? Number(e.target.value) : null)
+                        }
+                        className="input-western py-2 text-sm w-full sm:w-auto"
+                      >
+                        <option value="">Todos funcionarios</option>
+                        {auditoriaFuncionarios.map((f) => (
+                          <option key={f.funcionario_id} value={f.funcionario_id}>
+                            {f.nome}
+                          </option>
+                        ))}
+                      </select>
 
-                    <select
-                      value={filterTipo}
-                      onChange={(e) => setFilterTipo(e.target.value)}
-                      className="input-western py-2 text-sm"
-                    >
-                      <option value="">Todos tipos</option>
-                      {tiposUnicos.map((tipo) => (
-                        <option key={tipo} value={tipo}>
-                          {TIPO_LABELS[tipo] || tipo}
-                        </option>
-                      ))}
-                    </select>
+                      <select
+                        value={filterTipo}
+                        onChange={(e) => setFilterTipo(e.target.value)}
+                        className="input-western py-2 text-sm w-full sm:w-auto"
+                      >
+                        <option value="">Todos tipos</option>
+                        {tiposUnicos.map((tipo) => (
+                          <option key={tipo} value={tipo}>
+                            {TIPO_LABELS[tipo] || tipo}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                    <div className="flex items-center gap-2">
-                      <Calendar size={14} className="text-parchment-500" />
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <Calendar size={14} className="text-parchment-500 hidden sm:block" />
                       <input
                         type="date"
                         value={filterDateStart}
                         onChange={(e) => setFilterDateStart(e.target.value)}
-                        className="input-western py-2 text-sm"
+                        className="input-western py-2 text-sm flex-1 sm:flex-none"
                         placeholder="Data inicio"
                       />
                       <span className="text-parchment-500">-</span>
@@ -495,13 +497,13 @@ export function Auditoria() {
                         type="date"
                         value={filterDateEnd}
                         onChange={(e) => setFilterDateEnd(e.target.value)}
-                        className="input-western py-2 text-sm"
+                        className="input-western py-2 text-sm flex-1 sm:flex-none"
                         placeholder="Data fim"
                       />
                     </div>
                   </>
                 )}
-                <div className="relative">
+                <div className="relative flex-1 sm:flex-none">
                   <Search
                     size={16}
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-leather-500"
@@ -511,7 +513,7 @@ export function Auditoria() {
                     placeholder="Buscar..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="input-western pl-9 py-2 text-sm w-64"
+                    className="input-western pl-9 py-2 text-sm w-full sm:w-64"
                   />
                 </div>
               </div>
@@ -578,10 +580,10 @@ export function Auditoria() {
               {funcionarioHistorico.map((pag) => (
                 <div
                   key={pag.id}
-                  className="flex items-center justify-between p-3 bg-leather-800/30 rounded-western"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-leather-800/30 rounded-western gap-2"
                 >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
                       <Badge variant={TIPO_VARIANTS[pag.tipo] || 'default'}>
                         {TIPO_LABELS[pag.tipo] || pag.tipo}
                       </Badge>
@@ -590,10 +592,10 @@ export function Auditoria() {
                       </span>
                     </div>
                     {pag.descricao && (
-                      <p className="text-sm text-parchment-400 mt-1">{pag.descricao}</p>
+                      <p className="text-xs sm:text-sm text-parchment-400 mt-1 break-words">{pag.descricao}</p>
                     )}
                   </div>
-                  <span className="font-heading text-gold-500 text-lg">
+                  <span className="font-heading text-gold-500 text-base sm:text-lg shrink-0">
                     {formatCurrency(pag.valor)}
                   </span>
                 </div>
