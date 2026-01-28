@@ -48,15 +48,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Load empresas
-  const loadEmpresas = useCallback(async () => {
+  // Load empresas (optionally force-selecting a guild's empresa)
+  const loadEmpresas = useCallback(async (forGuildId?: string) => {
     setIsLoadingEmpresas(true);
     try {
       const data = await getEmpresas();
       setEmpresas(data);
 
-      // Auto-select first empresa if none selected
-      if (!selectedEmpresa && data.length > 0) {
+      if (forGuildId) {
+        // Guild switch: select the first empresa matching the new guild
+        const match = data.find(e => e.guild_id === forGuildId);
+        if (match) {
+          setSelectedEmpresa(match);
+        } else if (data.length > 0) {
+          setSelectedEmpresa(data[0]);
+        }
+      } else if (!selectedEmpresa && data.length > 0) {
+        // Initial load: auto-select first
         setSelectedEmpresa(data[0]);
       }
     } catch (error) {
@@ -113,14 +121,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [selectedEmpresa, loadStats]);
 
-  // Sync Auth Context when selected empresa changes (for multi-server support)
-  const { switchGuild, userFrontend } = useAuth(); 
+  // Sync Auth Context <-> App Context (for multi-server support)
+  const { switchGuild, userFrontend } = useAuth();
 
+  // When user picks a different empresa, sync AuthContext to match
   useEffect(() => {
       if (selectedEmpresa && userFrontend?.guild_id && selectedEmpresa.guild_id !== userFrontend.guild_id) {
           switchGuild(selectedEmpresa.guild_id);
       }
   }, [selectedEmpresa]);
+
+  // When user switches guild via AuthContext, reload empresas for the new guild
+  useEffect(() => {
+      if (userFrontend?.guild_id) {
+          // Only reload if the current empresa doesn't match the new guild
+          if (!selectedEmpresa || selectedEmpresa.guild_id !== userFrontend.guild_id) {
+              loadEmpresas(userFrontend.guild_id);
+          }
+      }
+  }, [userFrontend?.guild_id]);
 
   const value: AppContextType = {
     empresas,
