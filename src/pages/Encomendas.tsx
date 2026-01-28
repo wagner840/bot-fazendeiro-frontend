@@ -390,15 +390,15 @@ export function Encomendas() {
       className="space-y-6"
     >
       {/* Page Header */}
-      <motion.div variants={item} className="flex items-center justify-between">
+      <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl text-gold-500">Encomendas</h1>
-          <p className="text-parchment-400 mt-1">
+          <h1 className="font-display text-2xl sm:text-3xl text-gold-500">Encomendas</h1>
+          <p className="text-parchment-400 mt-1 text-sm sm:text-base">
             Pedidos e entregas de {selectedEmpresa?.nome}
           </p>
         </div>
         {isAdmin && (
-          <Button onClick={openCreateModal} leftIcon={<Plus size={16} />}>
+          <Button onClick={openCreateModal} leftIcon={<Plus size={16} />} className="w-full sm:w-auto">
             Nova Encomenda
           </Button>
         )}
@@ -435,7 +435,7 @@ export function Encomendas() {
       </AnimatePresence>
 
       {/* Stats */}
-      <motion.div variants={item} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <motion.div variants={item} className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <Card className="p-4">
           <div className="flex items-center gap-3">
             <div className="p-3 rounded-western bg-whiskey-900/30">
@@ -506,11 +506,11 @@ export function Encomendas() {
         <Card>
           <CardHeader
             action={
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value as EncomendaStatus | '')}
-                  className="select-western py-2 text-sm w-48"
+                  className="select-western py-2 text-sm w-full sm:w-48"
                 >
                   <option value="">Todos os Status</option>
                   <option value="pendente">Pendente</option>
@@ -518,7 +518,7 @@ export function Encomendas() {
                   <option value="entregue">Entregue</option>
                 </select>
 
-                <div className="relative">
+                <div className="relative flex-1 sm:flex-none">
                   <Search
                     size={16}
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-leather-500"
@@ -528,7 +528,7 @@ export function Encomendas() {
                     placeholder="Buscar encomenda..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="input-western pl-9 py-2 text-sm w-64"
+                    className="input-western pl-9 py-2 text-sm w-full sm:w-64"
                   />
                 </div>
               </div>
@@ -561,14 +561,14 @@ export function Encomendas() {
         {selectedEncomenda && (
           <div className="space-y-6">
             {/* Order Header */}
-            <div className="flex items-center justify-between p-4 bg-leather-800/30 rounded-western">
-              <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-3 sm:p-4 bg-leather-800/30 rounded-western">
+              <div className="flex items-center gap-3 sm:gap-4">
                 <Avatar name={selectedEncomenda.comprador} size="lg" />
                 <div>
-                  <p className="font-heading text-lg text-parchment-100">
+                  <p className="font-heading text-base sm:text-lg text-parchment-100">
                     {selectedEncomenda.comprador}
                   </p>
-                  <p className="text-sm text-parchment-500">
+                  <p className="text-xs sm:text-sm text-parchment-500">
                     Criado em: {formatDateTime(selectedEncomenda.data_criacao)}
                   </p>
                 </div>
@@ -678,7 +678,7 @@ export function Encomendas() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-parchment-400 mb-1">Valor Total</label>
               <Input
@@ -709,11 +709,11 @@ export function Encomendas() {
             </div>
           )}
 
-          <ModalFooter>
-            <Button variant="secondary" onClick={() => setShowCreateModal(false)}>
+          <ModalFooter className="flex-col-reverse sm:flex-row">
+            <Button variant="secondary" onClick={() => setShowCreateModal(false)} className="w-full sm:w-auto">
               Cancelar
             </Button>
-            <Button onClick={handleCreateEncomenda} isLoading={isSaving} leftIcon={<Plus size={16} />}>
+            <Button onClick={handleCreateEncomenda} isLoading={isSaving} leftIcon={<Plus size={16} />} className="w-full sm:w-auto">
               Criar Encomenda
             </Button>
           </ModalFooter>
@@ -732,7 +732,7 @@ export function Encomendas() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-parchment-400 mb-1">Valor Total</label>
               <Input
@@ -763,11 +763,11 @@ export function Encomendas() {
             </div>
           )}
 
-          <ModalFooter>
-            <Button variant="secondary" onClick={() => setShowEditModal(false)}>
+          <ModalFooter className="flex-col-reverse sm:flex-row">
+            <Button variant="secondary" onClick={() => setShowEditModal(false)} className="w-full sm:w-auto">
               Cancelar
             </Button>
-            <Button onClick={handleUpdateEncomenda} isLoading={isSaving} leftIcon={<Check size={16} />}>
+            <Button onClick={handleUpdateEncomenda} isLoading={isSaving} leftIcon={<Check size={16} />} className="w-full sm:w-auto">
               Salvar Alterações
             </Button>
           </ModalFooter>
@@ -793,17 +793,18 @@ export function Encomendas() {
             Esta ação não pode ser desfeita.
           </p>
 
-          <div className="flex justify-center gap-3">
+          <div className="flex flex-col-reverse sm:flex-row justify-center gap-2 sm:gap-3">
             <Button
               variant="secondary"
               onClick={() => setShowDeleteModal(false)}
+              className="w-full sm:w-auto"
             >
               Cancelar
             </Button>
             <Button
               onClick={handleDeleteEncomenda}
               isLoading={isSaving}
-              className="bg-rust-600 hover:bg-rust-700"
+              className="bg-rust-600 hover:bg-rust-700 w-full sm:w-auto"
               leftIcon={<Trash2 size={16} />}
             >
               Excluir

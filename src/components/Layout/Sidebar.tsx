@@ -13,6 +13,8 @@ import {
   UserCog,
   Building2,
   Shield,
+  Warehouse,
+  FileSearch,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
@@ -73,9 +75,11 @@ export function Sidebar() {
     { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
     { to: '/dashboard/funcionarios', icon: <Users size={20} />, label: 'Funcionários' },
     { to: '/dashboard/produtos', icon: <Package size={20} />, label: 'Produtos' },
+    { to: '/dashboard/estoque', icon: <Warehouse size={20} />, label: 'Estoque' },
     { to: '/dashboard/encomendas', icon: <ClipboardList size={20} />, label: 'Encomendas' },
     { to: '/dashboard/financeiro', icon: <DollarSign size={20} />, label: 'Financeiro' },
     ...(isAdmin ? [
+      { to: '/dashboard/auditoria', icon: <FileSearch size={20} />, label: 'Auditoria' },
       { to: '/dashboard/empresas', icon: <Building2 size={20} />, label: 'Minhas Empresas' },
       { to: '/dashboard/usuarios', icon: <UserCog size={20} />, label: 'Gerenciar Usuários' },
       { to: '/dashboard/configuracoes', icon: <Settings size={20} />, label: 'Configurações' },

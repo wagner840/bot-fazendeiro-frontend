@@ -1,8 +1,10 @@
 export { Dashboard } from './Dashboard';
 export { Funcionarios } from './Funcionarios';
 export { Produtos } from './Produtos';
+export { Estoque } from './Estoque';
 export { Encomendas } from './Encomendas';
 export { Financeiro } from './Financeiro';
+export { Auditoria } from './Auditoria';
 export { Configuracoes } from './Configuracoes';
 export { Login } from './Login';
 export { AuthCallback } from './AuthCallback';

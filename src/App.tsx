@@ -8,8 +8,10 @@ import {
   Dashboard,
   Funcionarios,
   Produtos,
+  Estoque,
   Encomendas,
   Financeiro,
+  Auditoria,
   Configuracoes,
   Login,
   AuthCallback,
@@ -68,8 +70,17 @@ function App() {
               <Route index element={<Dashboard />} />
               <Route path="funcionarios" element={<Funcionarios />} />
               <Route path="produtos" element={<Produtos />} />
+              <Route path="estoque" element={<Estoque />} />
               <Route path="encomendas" element={<Encomendas />} />
               <Route path="financeiro" element={<Financeiro />} />
+              <Route
+                path="auditoria"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <Auditoria />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="configuracoes"
                 element={
