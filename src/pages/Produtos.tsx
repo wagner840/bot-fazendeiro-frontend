@@ -534,15 +534,15 @@ export function Produtos() {
       className="space-y-6"
     >
       {/* Page Header */}
-      <motion.div variants={item} className="flex items-center justify-between">
+      <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl text-gold-500">Produtos</h1>
-          <p className="text-parchment-400 mt-1">
+          <h1 className="font-display text-2xl sm:text-3xl text-gold-500">Produtos</h1>
+          <p className="text-parchment-400 mt-1 text-sm sm:text-base">
             Catálogo e preços de {selectedEmpresa?.nome}
           </p>
         </div>
         {isAdmin && (
-          <Button onClick={openCreateModal} leftIcon={<Plus size={16} />}>
+          <Button onClick={openCreateModal} leftIcon={<Plus size={16} />} className="w-full sm:w-auto">
             Novo Produto
           </Button>
         )}
@@ -550,35 +550,40 @@ export function Produtos() {
 
       {/* Quick Price Buttons */}
       {isAdmin && (
-        <motion.div variants={item} className="flex items-center gap-3 flex-wrap">
-          <span className="text-sm text-parchment-500 flex items-center gap-1">
+        <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <span className="text-xs sm:text-sm text-parchment-500 flex items-center gap-1">
             <Settings size={14} />
             Config. Rápida de Preços:
           </span>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => handleBulkPrecos('min')}
-            isLoading={isSaving}
-          >
-            Config. Mínimo
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => handleBulkPrecos('medio')}
-            isLoading={isSaving}
-          >
-            Config. Médio
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => handleBulkPrecos('max')}
-            isLoading={isSaving}
-          >
-            Config. Máximo
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => handleBulkPrecos('min')}
+              isLoading={isSaving}
+              className="flex-1 sm:flex-none"
+            >
+              Config. Mínimo
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => handleBulkPrecos('medio')}
+              isLoading={isSaving}
+              className="flex-1 sm:flex-none"
+            >
+              Config. Médio
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => handleBulkPrecos('max')}
+              isLoading={isSaving}
+              className="flex-1 sm:flex-none"
+            >
+              Config. Máximo
+            </Button>
+          </div>
         </motion.div>
       )}
 
@@ -613,7 +618,7 @@ export function Produtos() {
       </AnimatePresence>
 
       {/* Stats */}
-      <motion.div variants={item} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <motion.div variants={item} className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <Card className="p-4">
           <div className="flex items-center gap-3">
             <div className="p-3 rounded-western bg-leather-800/50">
@@ -684,11 +689,11 @@ export function Produtos() {
         <Card>
           <CardHeader
             action={
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
                 <select
                   value={selectedCategoria}
                   onChange={(e) => setSelectedCategoria(e.target.value)}
-                  className="select-western py-2 text-sm w-48"
+                  className="select-western py-2 text-sm w-full sm:w-48"
                 >
                   <option value="">Todas as Categorias</option>
                   {categorias.map((cat) => (
@@ -698,7 +703,7 @@ export function Produtos() {
                   ))}
                 </select>
 
-                <div className="relative">
+                <div className="relative flex-1 sm:flex-none">
                   <Search
                     size={16}
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-leather-500"
@@ -708,7 +713,7 @@ export function Produtos() {
                     placeholder="Buscar produto..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="input-western pl-9 py-2 text-sm w-64"
+                    className="input-western pl-9 py-2 text-sm w-full sm:w-64"
                   />
                 </div>
               </div>
@@ -733,16 +738,18 @@ export function Produtos() {
 
       {/* Pricing Reference */}
       <motion.div variants={item}>
-        <Card className="p-4">
-          <div className="flex items-center gap-4 text-sm">
+        <Card className="p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm">
             <span className="text-parchment-500">Legenda de Preços:</span>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-gold-500" />
-              <span className="text-parchment-400">Preço de Venda (cliente)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-whiskey-600" />
-              <span className="text-parchment-400">Pagamento ao Funcionário (25% padrão)</span>
+            <div className="flex flex-wrap gap-3 sm:gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-gold-500 flex-shrink-0" />
+                <span className="text-parchment-400">Preço de Venda (cliente)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-whiskey-600 flex-shrink-0" />
+                <span className="text-parchment-400">Pagamento ao Funcionário (25% padrão)</span>
+              </div>
             </div>
           </div>
         </Card>
@@ -937,7 +944,7 @@ export function Produtos() {
           {isSuperadmin ? (
             <>
               {/* Full form for superadmin */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm text-parchment-400 mb-1">Tipo de Empresa *</label>
                   <select
@@ -962,7 +969,7 @@ export function Produtos() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm text-parchment-400 mb-1">Nome *</label>
                   <Input
@@ -981,7 +988,7 @@ export function Produtos() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm text-parchment-400 mb-1">Preço Mínimo *</label>
                   <Input
@@ -1097,7 +1104,7 @@ export function Produtos() {
       {/* Admin Edit Product Modal */}
       <Modal isOpen={showEditRefModal} onClose={() => setShowEditRefModal(false)} title="Editar Produto de Referência" size="lg">
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-parchment-400 mb-1">Tipo de Empresa *</label>
               <select
@@ -1121,7 +1128,7 @@ export function Produtos() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-parchment-400 mb-1">Nome *</label>
               <Input
@@ -1138,7 +1145,7 @@ export function Produtos() {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm text-parchment-400 mb-1">Preço Mínimo *</label>
               <Input

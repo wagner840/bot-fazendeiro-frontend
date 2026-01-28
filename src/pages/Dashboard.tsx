@@ -86,19 +86,19 @@ export function Dashboard() {
       className="space-y-6"
     >
       {/* Page Header */}
-      <motion.div variants={item} className="flex items-center justify-between">
+      <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl text-gold-500">Dashboard</h1>
-          <p className="text-parchment-400 mt-1">
+          <h1 className="font-display text-2xl sm:text-3xl text-gold-500">Dashboard</h1>
+          <p className="text-parchment-400 mt-1 text-sm sm:text-base">
             Bem-vindo ao painel de controle de {selectedEmpresa.nome}
-            <span className="text-gold-500 ml-2 text-sm font-semibold px-2 py-0.5 rounded-full bg-gold-500/10 border border-gold-500/20">
+            <span className="text-gold-500 ml-2 text-xs sm:text-sm font-semibold px-2 py-0.5 rounded-full bg-gold-500/10 border border-gold-500/20 inline-block mt-1 sm:mt-0">
               {selectedEmpresa.tipo_empresa?.base_redm_id === 2 ? '🐉 Valiria' : '🏙️ Downtown'}
             </span>
           </p>
         </div>
-        <div className="text-right">
-          <p className="text-sm text-parchment-500">Última atualização</p>
-          <p className="font-heading text-parchment-300">
+        <div className="text-left sm:text-right">
+          <p className="text-xs sm:text-sm text-parchment-500">Última atualização</p>
+          <p className="font-heading text-parchment-300 text-sm sm:text-base">
             {formatDate(new Date().toISOString())}
           </p>
         </div>
@@ -145,7 +145,7 @@ export function Dashboard() {
               </h2>
             </CardHeader>
             <CardContent>
-              <div style={{ width: '100%', height: 300, minHeight: 300 }}>
+              <div className="w-full h-[200px] sm:h-[250px] lg:h-[300px]">
                 {!isLoading && revenueData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={revenueData}>
@@ -217,7 +217,7 @@ export function Dashboard() {
               </h2>
             </CardHeader>
             <CardContent>
-              <div style={{ width: '100%', height: 200, minHeight: 200 }}>
+              <div className="w-full h-[150px] sm:h-[180px] lg:h-[200px]">
                 {!isLoading && categoryData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -421,49 +421,45 @@ export function Dashboard() {
 
       {/* Quick Stats Bar */}
       <motion.div variants={item}>
-        <Card className="p-4">
-          <div className="flex items-center justify-between flex-wrap gap-4">
+        <Card className="p-3 sm:p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-western bg-whiskey-900/30">
-                <ClipboardList size={20} className="text-whiskey-400" />
+              <div className="p-2 rounded-western bg-whiskey-900/30 flex-shrink-0">
+                <ClipboardList size={18} className="text-whiskey-400 sm:w-5 sm:h-5" />
               </div>
-              <div>
-                <p className="text-2xl font-display text-gold-500">
+              <div className="min-w-0">
+                <p className="text-xl sm:text-2xl font-display text-gold-500">
                   {stats?.encomendasPendentes ?? 0}
                 </p>
-                <p className="text-xs text-parchment-500 uppercase tracking-wider">
+                <p className="text-xs text-parchment-500 uppercase tracking-wider truncate">
                   Encomendas Pendentes
                 </p>
               </div>
             </div>
 
-            <div className="h-12 w-px bg-leather-700/50 hidden md:block" />
-
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-western bg-green-900/30">
-                <TrendingUp size={20} className="text-green-400" />
+            <div className="flex items-center gap-3 sm:border-l sm:border-leather-700/50 sm:pl-6">
+              <div className="p-2 rounded-western bg-green-900/30 flex-shrink-0">
+                <TrendingUp size={18} className="text-green-400 sm:w-5 sm:h-5" />
               </div>
-              <div>
-                <p className="text-2xl font-display text-gold-500">
+              <div className="min-w-0">
+                <p className="text-xl sm:text-2xl font-display text-gold-500">
                   {stats?.encomendasEntregues ?? 0}
                 </p>
-                <p className="text-xs text-parchment-500 uppercase tracking-wider">
+                <p className="text-xs text-parchment-500 uppercase tracking-wider truncate">
                   Entregas Concluídas
                 </p>
               </div>
             </div>
 
-            <div className="h-12 w-px bg-leather-700/50 hidden md:block" />
-
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-western bg-rust-900/30">
-                <DollarSign size={20} className="text-rust-400" />
+            <div className="flex items-center gap-3 sm:border-l sm:border-leather-700/50 sm:pl-6">
+              <div className="p-2 rounded-western bg-rust-900/30 flex-shrink-0">
+                <DollarSign size={18} className="text-rust-400 sm:w-5 sm:h-5" />
               </div>
-              <div>
-                <p className="text-2xl font-display text-gold-500">
+              <div className="min-w-0">
+                <p className="text-xl sm:text-2xl font-display text-gold-500 truncate">
                   {formatCurrency(stats?.saldoTotalFuncionarios ?? 0)}
                 </p>
-                <p className="text-xs text-parchment-500 uppercase tracking-wider">
+                <p className="text-xs text-parchment-500 uppercase tracking-wider truncate">
                   Saldo Total Funcionários
                 </p>
               </div>

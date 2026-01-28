@@ -188,19 +188,19 @@ export function Financeiro() {
       className="space-y-6"
     >
       {/* Page Header */}
-      <motion.div variants={item} className="flex items-center justify-between">
+      <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl text-gold-500">Financeiro (Dinâmico)</h1>
-          <p className="text-parchment-400 mt-1">
+          <h1 className="font-display text-2xl sm:text-3xl text-gold-500">Financeiro</h1>
+          <p className="text-parchment-400 mt-1 text-sm sm:text-base">
             Relatórios e histórico de {selectedEmpresa?.nome}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto">
           {(['week', 'month', 'year'] as const).map((period) => (
             <button
               key={period}
               onClick={() => setSelectedPeriod(period)}
-              className={`px-4 py-2 rounded-western text-sm font-heading transition-colors ${
+              className={`px-3 sm:px-4 py-2 rounded-western text-xs sm:text-sm font-heading transition-colors whitespace-nowrap ${
                 selectedPeriod === period
                   ? 'bg-gold-500/20 text-gold-400 border border-gold-500/30'
                   : 'text-parchment-400 hover:text-parchment-200'
@@ -213,7 +213,7 @@ export function Financeiro() {
       </motion.div>
 
       {/* Stats */}
-      <motion.div variants={item} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <motion.div variants={item} className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <Card className="p-4">
           <div className="flex items-center gap-3">
             <div className="p-3 rounded-western bg-green-900/30">
@@ -290,7 +290,7 @@ export function Financeiro() {
               </h2>
             </CardHeader>
             <CardContent>
-              <div className="h-[300px]">
+              <div className="h-[200px] sm:h-[250px] lg:h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={chartData}>
                     <defs>
@@ -355,7 +355,7 @@ export function Financeiro() {
               </h2>
             </CardHeader>
             <CardContent>
-              <div className="h-[300px]">
+              <div className="h-[200px] sm:h-[250px] lg:h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(109, 79, 40, 0.3)" />

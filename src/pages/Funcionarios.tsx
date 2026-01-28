@@ -221,10 +221,10 @@ export function Funcionarios() {
       className="space-y-6"
     >
       {/* Page Header */}
-      <motion.div variants={item} className="flex items-center justify-between">
+      <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl text-gold-500">Funcionários</h1>
-          <p className="text-parchment-400 mt-1">
+          <h1 className="font-display text-2xl sm:text-3xl text-gold-500">Funcionários</h1>
+          <p className="text-parchment-400 mt-1 text-sm sm:text-base">
             Gerencie a equipe de {selectedEmpresa?.nome}
           </p>
         </div>
@@ -286,8 +286,8 @@ export function Funcionarios() {
         <Card>
           <CardHeader
             action={
-              <div className="flex items-center gap-3">
-                <div className="relative">
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <div className="relative flex-1 sm:flex-none">
                   <Search
                     size={16}
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-leather-500"
@@ -297,7 +297,7 @@ export function Funcionarios() {
                     placeholder="Buscar funcionário..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="input-western pl-9 py-2 text-sm w-64"
+                    className="input-western pl-9 py-2 text-sm w-full sm:w-64"
                   />
                 </div>
               </div>
@@ -330,22 +330,22 @@ export function Funcionarios() {
         {selectedFuncionario && (
           <div className="space-y-6">
             {/* Employee Info */}
-            <div className="flex items-center gap-4 p-4 bg-leather-800/30 rounded-western">
-              <Avatar name={selectedFuncionario.nome} size="lg" />
-              <div className="flex-1">
-                <p className="font-heading text-lg text-parchment-100">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-3 sm:p-4 bg-leather-800/30 rounded-western">
+              <Avatar name={selectedFuncionario.nome} size="lg" className="mx-auto sm:mx-0" />
+              <div className="flex-1 text-center sm:text-left">
+                <p className="font-heading text-base sm:text-lg text-parchment-100">
                   {selectedFuncionario.nome}
                 </p>
-                <p className="text-sm text-parchment-500">
+                <p className="text-xs sm:text-sm text-parchment-500 break-all">
                   Discord: {selectedFuncionario.discord_id}
                 </p>
                 <p className="text-xs text-parchment-600">
                   Desde: {formatDate(selectedFuncionario.data_cadastro)}
                 </p>
               </div>
-              <div className="text-right">
+              <div className="text-center sm:text-right border-t sm:border-t-0 pt-3 sm:pt-0 mt-2 sm:mt-0 border-leather-700/50">
                 <p className="text-xs text-parchment-500 uppercase">Saldo Atual</p>
-                <p className="text-2xl font-display text-gold-500">
+                <p className="text-xl sm:text-2xl font-display text-gold-500">
                   {formatCurrency(selectedFuncionario.saldo)}
                 </p>
               </div>

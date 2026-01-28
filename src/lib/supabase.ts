@@ -678,3 +678,327 @@ export async function deleteEncomenda(id: number): Promise<void> {
   if (error) throw error;
 }
 
+// ============ ESTOQUE GLOBAL FUNCTIONS ============
+
+export interface EstoqueGlobalItem {
+  id: number;
+  funcionario_id: number;
+  empresa_id: number;
+  produto_codigo: string;
+  quantidade: number;
+  data_atualizacao: string;
+  funcionario_nome: string;
+  preco_venda: number;
+  preco_pagamento_funcionario: number;
+}
+
+export async function getEstoqueGlobal(empresaId: number): Promise<EstoqueGlobalItem[]> {
+  // First get all estoque items for the empresa
+  const { data: estoqueData, error: estoqueError } = await supabase
+    .from('estoque_produtos')
+    .select('*')
+    .eq('empresa_id', empresaId)
+    .gt('quantidade', 0);
+
+  if (estoqueError) throw estoqueError;
+  if (!estoqueData || estoqueData.length === 0) return [];
+
+  // Get funcionarios for names
+  const funcionarioIds = [...new Set(estoqueData.map(e => e.funcionario_id))];
+  const { data: funcionariosData, error: funcError } = await supabase
+    .from('funcionarios')
+    .select('id, nome')
+    .in('id', funcionarioIds);
+
+  if (funcError) throw funcError;
+
+  // Get produtos_empresa for prices
+  const { data: produtosData, error: prodError } = await supabase
+    .from('produtos_empresa')
+    .select('produto_referencia:produtos_referencia(codigo), preco_venda, preco_pagamento_funcionario')
+    .eq('empresa_id', empresaId)
+    .eq('ativo', true);
+
+  if (prodError) throw prodError;
+
+  // Create maps for lookup
+  const funcionariosMap: Record<number, string> = {};
+  funcionariosData?.forEach(f => {
+    funcionariosMap[f.id] = f.nome;
+  });
+
+  const precosMap: Record<string, { preco_venda: number; preco_pagamento_funcionario: number }> = {};
+  produtosData?.forEach(p => {
+    const ref = p.produto_referencia as { codigo?: string } | { codigo?: string }[] | null;
+    const codigo = ref ? (Array.isArray(ref) ? ref[0]?.codigo : ref.codigo) : null;
+    if (codigo) {
+      precosMap[codigo.toLowerCase()] = {
+        preco_venda: p.preco_venda || 0,
+        preco_pagamento_funcionario: p.preco_pagamento_funcionario || 0,
+      };
+    }
+  });
+
+  // Enrich estoque data
+  return estoqueData.map(item => ({
+    ...item,
+    funcionario_nome: funcionariosMap[item.funcionario_id] || 'Desconhecido',
+    preco_venda: precosMap[item.produto_codigo.toLowerCase()]?.preco_venda || 0,
+    preco_pagamento_funcionario: precosMap[item.produto_codigo.toLowerCase()]?.preco_pagamento_funcionario || 0,
+  }));
+}
+
+export async function ajustarEstoque(
+  funcionarioId: number,
+  empresaId: number,
+  produtoCodigo: string,
+  novaQuantidade: number
+): Promise<void> {
+  if (novaQuantidade <= 0) {
+    // Delete the row if quantity is 0 or less
+    const { error } = await supabase
+      .from('estoque_produtos')
+      .delete()
+      .eq('funcionario_id', funcionarioId)
+      .eq('empresa_id', empresaId)
+      .eq('produto_codigo', produtoCodigo);
+
+    if (error) throw error;
+  } else {
+    // Upsert the row
+    const { error } = await supabase
+      .from('estoque_produtos')
+      .upsert(
+        {
+          funcionario_id: funcionarioId,
+          empresa_id: empresaId,
+          produto_codigo: produtoCodigo,
+          quantidade: novaQuantidade,
+          data_atualizacao: new Date().toISOString(),
+        },
+        { onConflict: 'funcionario_id,empresa_id,produto_codigo' }
+      );
+
+    if (error) throw error;
+  }
+}
+
+export async function zerarEstoqueFuncionario(
+  funcionarioId: number,
+  empresaId: number
+): Promise<void> {
+  const { error } = await supabase
+    .from('estoque_produtos')
+    .delete()
+    .eq('funcionario_id', funcionarioId)
+    .eq('empresa_id', empresaId);
+
+  if (error) throw error;
+}
+
+/**
+ * Zeros employee stock AND registers payment (mirrors bot's /pagar command).
+ * 1. Calculates total stock value
+ * 2. Inserts into historico_pagamentos
+ * 3. Updates funcionarios.saldo (adds the stock value)
+ * 4. Deletes all estoque_produtos for that funcionario+empresa
+ */
+export async function zerarEstoqueComPagamento(
+  funcionarioId: number,
+  empresaId: number
+): Promise<{ valorPago: number }> {
+  // 1. Get employee's current stock with prices
+  const { data: estoqueData, error: estoqueError } = await supabase
+    .from('estoque_produtos')
+    .select('*')
+    .eq('funcionario_id', funcionarioId)
+    .eq('empresa_id', empresaId)
+    .gt('quantidade', 0);
+
+  if (estoqueError) throw estoqueError;
+  if (!estoqueData || estoqueData.length === 0) {
+    return { valorPago: 0 };
+  }
+
+  // 2. Get product prices for calculating total value
+  const { data: produtosData, error: prodError } = await supabase
+    .from('produtos_empresa')
+    .select('produto_referencia:produtos_referencia(codigo), preco_pagamento_funcionario')
+    .eq('empresa_id', empresaId)
+    .eq('ativo', true);
+
+  if (prodError) throw prodError;
+
+  // Create price map
+  const precosMap: Record<string, number> = {};
+  produtosData?.forEach(p => {
+    const ref = p.produto_referencia as { codigo?: string } | { codigo?: string }[] | null;
+    const codigo = ref ? (Array.isArray(ref) ? ref[0]?.codigo : ref.codigo) : null;
+    if (codigo) {
+      precosMap[codigo.toLowerCase()] = p.preco_pagamento_funcionario || 0;
+    }
+  });
+
+  // 3. Calculate total stock value
+  let valorTotal = 0;
+  estoqueData.forEach(item => {
+    const preco = precosMap[item.produto_codigo.toLowerCase()] || 0;
+    valorTotal += item.quantidade * preco;
+  });
+
+  if (valorTotal <= 0) {
+    // Just delete stock if no value
+    await zerarEstoqueFuncionario(funcionarioId, empresaId);
+    return { valorPago: 0 };
+  }
+
+  // 4. Get current employee saldo
+  const { data: funcData, error: funcError } = await supabase
+    .from('funcionarios')
+    .select('saldo, nome')
+    .eq('id', funcionarioId)
+    .single();
+
+  if (funcError) throw funcError;
+
+  const novoSaldo = (funcData.saldo || 0) + valorTotal;
+
+  // 5. Insert into historico_pagamentos
+  const { error: histError } = await supabase
+    .from('historico_pagamentos')
+    .insert({
+      funcionario_id: funcionarioId,
+      tipo: 'estoque_acumulado',
+      valor: valorTotal,
+      descricao: `Pagamento de estoque acumulado via painel - ${estoqueData.length} produto(s)`,
+      data_pagamento: new Date().toISOString(),
+    });
+
+  if (histError) throw histError;
+
+  // 6. Update funcionarios.saldo
+  const { error: updateError } = await supabase
+    .from('funcionarios')
+    .update({ saldo: novoSaldo })
+    .eq('id', funcionarioId);
+
+  if (updateError) throw updateError;
+
+  // 7. Delete all stock
+  const { error: deleteError } = await supabase
+    .from('estoque_produtos')
+    .delete()
+    .eq('funcionario_id', funcionarioId)
+    .eq('empresa_id', empresaId);
+
+  if (deleteError) throw deleteError;
+
+  return { valorPago: valorTotal };
+}
+
+// ============ AUDITORIA FUNCTIONS ============
+
+export interface AuditoriaFuncionario {
+  funcionario_id: number;
+  nome: string;
+  discord_id: string;
+  total_historico: number;
+  saldo_atual: number;
+  estoque_valor: number;
+}
+
+/**
+ * Get payment history for an empresa with employee names
+ */
+export async function getHistoricoPagamentosEmpresa(empresaId: number): Promise<HistoricoPagamento[]> {
+  const { data, error } = await supabase
+    .from('historico_pagamentos')
+    .select(`
+      *,
+      funcionario:funcionarios!inner(empresa_id, nome, discord_id)
+    `)
+    .eq('funcionario.empresa_id', empresaId)
+    .order('data_pagamento', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+}
+
+/**
+ * Get per-employee audit summary for an empresa
+ */
+export async function getAuditoriaFuncionarios(empresaId: number): Promise<AuditoriaFuncionario[]> {
+  // 1. Get all funcionarios
+  const { data: funcionarios, error: funcError } = await supabase
+    .from('funcionarios')
+    .select('id, nome, discord_id, saldo')
+    .eq('empresa_id', empresaId)
+    .eq('ativo', true);
+
+  if (funcError) throw funcError;
+  if (!funcionarios || funcionarios.length === 0) return [];
+
+  const funcionarioIds = funcionarios.map(f => f.id);
+
+  // 2. Get total historico_pagamentos per funcionario
+  const { data: pagamentosData, error: pagError } = await supabase
+    .from('historico_pagamentos')
+    .select('funcionario_id, valor')
+    .in('funcionario_id', funcionarioIds);
+
+  if (pagError) throw pagError;
+
+  // Sum payments per employee
+  const pagamentosMap: Record<number, number> = {};
+  pagamentosData?.forEach(p => {
+    if (!pagamentosMap[p.funcionario_id]) pagamentosMap[p.funcionario_id] = 0;
+    pagamentosMap[p.funcionario_id] += p.valor || 0;
+  });
+
+  // 3. Get estoque data and prices
+  const { data: estoqueData, error: estError } = await supabase
+    .from('estoque_produtos')
+    .select('*')
+    .eq('empresa_id', empresaId)
+    .gt('quantidade', 0);
+
+  if (estError) throw estError;
+
+  const { data: produtosData, error: prodError } = await supabase
+    .from('produtos_empresa')
+    .select('produto_referencia:produtos_referencia(codigo), preco_pagamento_funcionario')
+    .eq('empresa_id', empresaId)
+    .eq('ativo', true);
+
+  if (prodError) throw prodError;
+
+  // Create price map
+  const precosMap: Record<string, number> = {};
+  produtosData?.forEach(p => {
+    const ref = p.produto_referencia as { codigo?: string } | { codigo?: string }[] | null;
+    const codigo = ref ? (Array.isArray(ref) ? ref[0]?.codigo : ref.codigo) : null;
+    if (codigo) {
+      precosMap[codigo.toLowerCase()] = p.preco_pagamento_funcionario || 0;
+    }
+  });
+
+  // Calculate stock value per employee
+  const estoqueMap: Record<number, number> = {};
+  estoqueData?.forEach(item => {
+    const preco = precosMap[item.produto_codigo.toLowerCase()] || 0;
+    const valor = item.quantidade * preco;
+    if (!estoqueMap[item.funcionario_id]) estoqueMap[item.funcionario_id] = 0;
+    estoqueMap[item.funcionario_id] += valor;
+  });
+
+  // 4. Build result
+  return funcionarios.map(f => ({
+    funcionario_id: f.id,
+    nome: f.nome,
+    discord_id: f.discord_id,
+    total_historico: pagamentosMap[f.id] || 0,
+    saldo_atual: f.saldo || 0,
+    estoque_valor: estoqueMap[f.id] || 0,
+  }));
+}
+
