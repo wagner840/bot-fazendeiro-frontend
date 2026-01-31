@@ -5,6 +5,7 @@ import {
   Database,
   RefreshCw,
   Info,
+  DollarSign,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import {
@@ -14,8 +15,9 @@ import {
   Button,
   Badge,
 } from '../components/ui';
-import { BUSINESS_ICONS } from '../lib/types';
+import { BUSINESS_ICONS, type ModoPagamento } from '../lib/types';
 import { formatDate } from '../lib/types';
+import { updateModoPagamento } from '../lib/supabase';
 
 const container = {
   hidden: { opacity: 0 },
@@ -31,8 +33,9 @@ const item = {
 };
 
 export function Configuracoes() {
-  const { selectedEmpresa, isLoadingEmpresas, addToast } = useApp();
+  const { selectedEmpresa, isLoadingEmpresas, addToast, refreshEmpresas } = useApp();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isUpdatingPaymentMode, setIsUpdatingPaymentMode] = useState(false);
 
   const businessIcon = selectedEmpresa?.tipo_empresa?.codigo
     ? BUSINESS_ICONS[selectedEmpresa.tipo_empresa.codigo] || '🏢'
@@ -65,6 +68,30 @@ export function Configuracoes() {
       title: 'Cache atualizado',
       message: 'Os dados foram recarregados com sucesso.',
     });
+  }
+
+  async function handlePaymentModeChange(newMode: ModoPagamento) {
+    if (!selectedEmpresa || isUpdatingPaymentMode) return;
+
+    setIsUpdatingPaymentMode(true);
+    try {
+      await updateModoPagamento(selectedEmpresa.id, newMode);
+      await refreshEmpresas();
+      addToast({
+        type: 'success',
+        title: 'Modo de pagamento atualizado',
+        message: `Modo alterado para: ${newMode === 'producao' ? 'Produção' : 'Entrega'}`,
+      });
+    } catch (error) {
+      console.error('Error updating payment mode:', error);
+      addToast({
+        type: 'error',
+        title: 'Erro ao atualizar',
+        message: 'Não foi possível alterar o modo de pagamento.',
+      });
+    } finally {
+      setIsUpdatingPaymentMode(false);
+    }
   }
 
   return (
@@ -204,8 +231,51 @@ export function Configuracoes() {
             </CardContent>
           </Card>
 
+          {/* Payment Mode Card */}
+          <Card>
+            <CardHeader>
+              <h2 className="font-heading text-lg text-parchment-100 flex items-center gap-2">
+                <DollarSign size={20} className="text-gold-500" />
+                Modo de Pagamento
+              </h2>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="p-3 bg-leather-800/30 rounded-western">
+                <p className="text-xs text-parchment-500 uppercase tracking-wider mb-2">
+                  Modo Atual
+                </p>
+                <Badge variant={selectedEmpresa?.modo_pagamento === 'entrega' ? 'success' : 'gold'}>
+                  {selectedEmpresa?.modo_pagamento === 'entrega' ? '📦 Entrega' : '🌾 Produção'}
+                </Badge>
+              </div>
 
+              <div className="space-y-2">
+                <Button
+                  variant={selectedEmpresa?.modo_pagamento === 'producao' ? 'primary' : 'secondary'}
+                  className="w-full justify-start"
+                  onClick={() => handlePaymentModeChange('producao')}
+                  disabled={selectedEmpresa?.modo_pagamento === 'producao' || isUpdatingPaymentMode}
+                  isLoading={isUpdatingPaymentMode && selectedEmpresa?.modo_pagamento !== 'producao'}
+                >
+                  🌾 Modo Produção
+                </Button>
+                <Button
+                  variant={selectedEmpresa?.modo_pagamento === 'entrega' ? 'primary' : 'secondary'}
+                  className="w-full justify-start"
+                  onClick={() => handlePaymentModeChange('entrega')}
+                  disabled={selectedEmpresa?.modo_pagamento === 'entrega' || isUpdatingPaymentMode}
+                  isLoading={isUpdatingPaymentMode && selectedEmpresa?.modo_pagamento !== 'entrega'}
+                >
+                  📦 Modo Entrega
+                </Button>
+              </div>
 
+              <div className="p-3 bg-leather-800/20 rounded-western text-xs text-parchment-500 space-y-2">
+                <p><strong className="text-parchment-400">Produção:</strong> Funcionário ganha comissão apenas pelos itens que ele mesmo produziu.</p>
+                <p><strong className="text-parchment-400">Entrega:</strong> Funcionário ganha comissão por todos os itens que entrega, independente de quem produziu.</p>
+              </div>
+            </CardContent>
+          </Card>
 
         </motion.div>
       </div>

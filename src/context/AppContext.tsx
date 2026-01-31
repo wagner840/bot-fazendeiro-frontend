@@ -10,6 +10,7 @@ interface AppContextType {
   selectedEmpresa: Empresa | null;
   setSelectedEmpresa: (empresa: Empresa | null) => void;
   loadEmpresas: () => Promise<void>;
+  refreshEmpresas: () => Promise<void>;
   isLoadingEmpresas: boolean;
 
   // Dashboard stats
@@ -76,6 +77,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
       });
     } finally {
       setIsLoadingEmpresas(false);
+    }
+  }, [selectedEmpresa]);
+
+  // Refresh empresas and update selected empresa with fresh data
+  const refreshEmpresas = useCallback(async () => {
+    try {
+      const data = await getEmpresas();
+      setEmpresas(data);
+
+      // Update selectedEmpresa with fresh data if it exists
+      if (selectedEmpresa) {
+        const updated = data.find(e => e.id === selectedEmpresa.id);
+        if (updated) {
+          setSelectedEmpresa(updated);
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing empresas:', error);
     }
   }, [selectedEmpresa]);
 
@@ -146,6 +165,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     selectedEmpresa,
     setSelectedEmpresa,
     loadEmpresas,
+    refreshEmpresas,
     isLoadingEmpresas,
     stats,
     loadStats,
