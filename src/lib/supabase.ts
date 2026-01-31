@@ -41,7 +41,22 @@ export async function getEmpresas(): Promise<Empresa[]> {
   return data || [];
 }
 
+/**
+ * Updates the payment mode for a company.
+ * @param empresaId - The ID of the company
+ * @param modoPagamento - The new payment mode ('producao' or 'entrega')
+ */
+export async function updateModoPagamento(
+  empresaId: number,
+  modoPagamento: 'producao' | 'entrega'
+): Promise<void> {
+  const { error } = await supabase
+    .from('empresas')
+    .update({ modo_pagamento: modoPagamento })
+    .eq('id', empresaId);
 
+  if (error) throw error;
+}
 
 // ============ TIPOS EMPRESA FUNCTIONS ============
 

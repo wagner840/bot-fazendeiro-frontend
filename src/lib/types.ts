@@ -11,6 +11,8 @@ export interface TipoEmpresa {
   base_redm_id: number;
 }
 
+export type ModoPagamento = 'producao' | 'entrega';
+
 export interface Empresa {
   id: number;
   guild_id: string;
@@ -19,6 +21,7 @@ export interface Empresa {
   proprietario_discord_id: string;
   data_criacao: string;
   ativo: boolean;
+  modo_pagamento: ModoPagamento;
   // Joined data
   tipo_empresa?: TipoEmpresa;
 }
