@@ -5,6 +5,7 @@ import {
   fetchUserFrontends,
   fetchSubscription,
   getDiscordId,
+  createTrial,
 } from './authService';
 import type {
   AuthState,
@@ -286,6 +287,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  // Activate trial for a guild
+  const activateTrial = async (guildId: string): Promise<{ success: boolean; message: string }> => {
+    const discordId = state.user ? getDiscordId(state.user) : null;
+    const result = await createTrial(guildId, discordId || undefined);
+
+    if (result.success) {
+      // Refresh subscription after trial activation
+      const subscription = await fetchSubscription(guildId);
+      setState((prev) => ({ ...prev, subscription }));
+    }
+
+    return result;
+  };
+
   // Computed properties
   const isLoggedIn = !!state.session;
   const isAuthenticated = !!state.user && !!state.userFrontend;
@@ -293,6 +308,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAdmin = state.userFrontend?.role === 'admin' || isSuperadmin;
   const isFuncionario = !!state.userFrontend;
   const hasActiveSubscription = state.subscription?.ativa === true || isSuperadmin;
+  const isTrial = state.subscription?.tipo === 'trial' && state.subscription?.ativa === true;
+  const isTrialExpired = state.subscription?.tipo === 'trial' && state.subscription?.ativa === false;
 
   // Check if user has required role
   const hasAccess = (requiredRole?: UserRole): boolean => {
@@ -312,7 +329,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAdmin,
     isFuncionario,
     hasActiveSubscription,
+    isTrial,
+    isTrialExpired,
     hasAccess,
+    activateTrial,
     refreshUserFrontend,
     refreshSubscription,
     switchGuild,

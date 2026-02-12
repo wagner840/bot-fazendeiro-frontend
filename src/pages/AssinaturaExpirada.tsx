@@ -1,13 +1,15 @@
-import { useNavigate, Link } from 'react-router-dom'; 
+import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { AlertTriangle, CreditCard, LogOut, ChevronDown, Check } from 'lucide-react';
+import { AlertTriangle, CreditCard, LogOut, ChevronDown, Check, Clock, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useState } from 'react';
 
 export function AssinaturaExpirada() {
-  const { signOut, userFrontend, userFrontends, switchGuild, hasActiveSubscription } = useAuth();
+  const { signOut, userFrontend, userFrontends, switchGuild, hasActiveSubscription, isTrialExpired, subscription, activateTrial } = useAuth();
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
+  const [trialLoading, setTrialLoading] = useState(false);
+  const [trialError, setTrialError] = useState<string | null>(null);
 
   // If user switched to an active sub, prompt to go back
   if (hasActiveSubscription) {
@@ -36,6 +38,26 @@ export function AssinaturaExpirada() {
       );
   }
 
+  const handleActivateTrial = async () => {
+    if (!userFrontend?.guild_id) return;
+    setTrialLoading(true);
+    setTrialError(null);
+
+    const result = await activateTrial(userFrontend.guild_id);
+
+    if (result.success) {
+      navigate('/dashboard');
+    } else {
+      setTrialError(result.message);
+    }
+    setTrialLoading(false);
+  };
+
+  // Check if this is an expired trial specifically
+  const isTrialCase = isTrialExpired;
+  // Check if guild never had a subscription (can activate trial)
+  const canActivateTrial = !subscription || (!subscription.ativa && subscription.tipo !== 'trial');
+
   return (
     <div className="min-h-screen bg-leather-950 flex items-center justify-center p-4">
       <motion.div
@@ -44,21 +66,26 @@ export function AssinaturaExpirada() {
         className="max-w-md w-full bg-leather-900 border border-rust-700/50 rounded-western p-8 text-center"
       >
         <div className="w-20 h-20 rounded-full bg-rust-500/20 flex items-center justify-center mx-auto mb-6">
-          <AlertTriangle className="w-10 h-10 text-rust-500" />
+          {isTrialCase ? (
+            <Clock className="w-10 h-10 text-rust-500" />
+          ) : (
+            <AlertTriangle className="w-10 h-10 text-rust-500" />
+          )}
         </div>
 
         <h2 className="font-display text-3xl text-rust-500 mb-4">
-          Assinatura Expirada
+          {isTrialCase ? 'Período de Teste Expirado' : 'Assinatura Expirada'}
         </h2>
 
         <p className="text-parchment-300 mb-6">
-          Sua assinatura do Bot Fazendeiro expirou ou ainda não foi ativada.
-          Para continuar usando o bot e acessar o painel, renove sua assinatura.
+          {isTrialCase
+            ? 'Seu período de teste gratuito de 3 dias acabou. Gostou do Bot Fazendeiro? Assine agora para continuar usando!'
+            : 'Sua assinatura do Bot Fazendeiro expirou ou ainda não foi ativada. Para continuar usando o bot e acessar o painel, renove sua assinatura.'}
         </p>
 
         <div className="mb-8 bg-leather-800/50 p-4 rounded-western border border-leather-700/50">
             <p className="text-parchment-500 text-sm mb-2">Servidor Selecionado:</p>
-            
+
             <div className="relative">
                 <button
                     onClick={() => setShowDropdown(!showDropdown)}
@@ -91,12 +118,38 @@ export function AssinaturaExpirada() {
         </div>
 
         <div className="space-y-4">
+          {/* Show trial button only if guild never had trial */}
+          {canActivateTrial && (
+            <>
+              <button
+                onClick={handleActivateTrial}
+                disabled={trialLoading}
+                className="w-full py-3 bg-gradient-to-r from-gold-500 to-whiskey-500 text-leather-950 font-heading rounded-western hover:from-gold-400 hover:to-whiskey-400 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {trialLoading ? (
+                  <div className="w-5 h-5 border-2 border-leather-950 border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Sparkles className="w-5 h-5" />
+                )}
+                {trialLoading ? 'Ativando...' : 'Testar Grátis por 3 Dias'}
+              </button>
+              <div className="relative flex items-center justify-center">
+                <div className="border-t border-leather-700 w-full absolute" />
+                <span className="bg-leather-900 px-4 text-parchment-600 text-xs relative">ou</span>
+              </div>
+            </>
+          )}
+
+          {trialError && (
+            <p className="text-rust-400 text-sm">{trialError}</p>
+          )}
+
           <Link
             to="/checkout"
             className="w-full py-3 bg-gold-500 text-leather-950 font-heading rounded-western hover:bg-gold-400 transition-colors flex items-center justify-center gap-2"
           >
             <CreditCard className="w-5 h-5" />
-            Renovar Assinatura
+            {isTrialCase ? 'Assinar Agora' : 'Renovar Assinatura'}
           </Link>
 
           <button
