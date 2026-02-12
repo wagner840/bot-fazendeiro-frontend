@@ -7,6 +7,7 @@ import {
   CreditCard,
   Users,
 } from 'lucide-react';
+import { usePageTitle } from '../hooks/usePageTitle';
 import {
   AreaChart,
   Area,
@@ -55,6 +56,7 @@ const item = {
 };
 
 export function Financeiro() {
+  usePageTitle('Financeiro');
   const { selectedEmpresa, addToast, stats } = useApp();
   const [pagamentos, setPagamentos] = useState<HistoricoPagamento[]>([]);
   const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);

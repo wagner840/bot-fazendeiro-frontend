@@ -8,6 +8,7 @@ import {
   X,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { usePageTitle } from '../hooks/usePageTitle';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { Card, CardContent, Button, Input, Badge } from '../components/ui';
@@ -16,6 +17,7 @@ import { BUSINESS_ICONS } from '../lib/types';
 import type { Empresa } from '../lib/types';
 
 export function GerenciarEmpresas() {
+  usePageTitle('Minhas Empresas');
   const { userFrontend, isAdmin } = useAuth();
   const { setSelectedEmpresa, selectedEmpresa } = useApp();
   const [empresas, setEmpresas] = useState<Empresa[]>([]);

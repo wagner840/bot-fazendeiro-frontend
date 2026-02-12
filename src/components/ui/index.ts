@@ -5,3 +5,4 @@ export { Table } from './Table';
 export { Button } from './Button';
 export { Input } from './Input';
 export { Badge, StatusStamp, Progress, Avatar } from './Badge';
+export { EmptyState } from './EmptyState';
