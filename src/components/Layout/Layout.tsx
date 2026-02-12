@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
+import { BottomNav } from './BottomNav';
 import { Toast } from '../ui/Toast';
 import { useApp } from '../../context/AppContext';
 
@@ -50,10 +51,12 @@ export function Layout() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header />
 
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 overflow-auto p-4 sm:p-6 pb-20 md:pb-6">
           <Outlet />
         </main>
       </div>
+
+      <BottomNav />
 
       {/* Toast Container */}
       <div className="fixed bottom-4 right-4 z-50 space-y-2">

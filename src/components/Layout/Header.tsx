@@ -1,9 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search,
-  Bell,
   RefreshCw,
   ChevronDown,
   Building2,
@@ -12,11 +11,15 @@ import {
   User,
   Shield,
   Settings,
+  X,
+  Bell,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../hooks/useNotifications';
 import { cn } from '../../lib/utils';
 import { BUSINESS_ICONS } from '../../lib/types';
+import { NotificationPanel } from './NotificationPanel';
 
 export function Header() {
   const {
@@ -32,7 +35,29 @@ export function Header() {
 
   const [showEmpresaDropdown, setShowEmpresaDropdown] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const mobileSearchRef = useRef<HTMLInputElement>(null);
+
+  const { activities, unreadCount, isLoading: isLoadingNotifications, markAsRead } = useNotifications(
+    selectedEmpresa?.id ?? null
+  );
+
+  const handleOpenNotifications = () => {
+    setShowNotifications(true);
+    markAsRead();
+  };
+
+  const handleCloseNotifications = () => {
+    setShowNotifications(false);
+  };
+
+  useEffect(() => {
+    if (showMobileSearch) {
+      mobileSearchRef.current?.focus();
+    }
+  }, [showMobileSearch]);
 
   const handleRefresh = () => {
     loadStats();
@@ -55,9 +80,10 @@ export function Header() {
     <header className="h-16 border-b border-leather-700/50 bg-leather-900/50 backdrop-blur-sm px-4 md:px-6 flex items-center justify-between gap-4 relative z-50">
       
       {/* Mobile Menu Toggle - Visible only on mobile */}
-      <button 
+      <button
         className="md:hidden p-2 -ml-2 text-gold-500 hover:text-gold-400"
         onClick={() => setMobileMenuOpen(true)}
+        aria-label="Abrir menu"
       >
        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
       </button>
@@ -78,20 +104,85 @@ export function Header() {
       
       {/* Mobile Search Icon - Visible only on mobile */}
       <div className="md:hidden flex-1 flex justify-end">
-         {/* Could act as a toggle for a search overlay, but for now just a placeholder or minimal */}
-         <button className="p-2 text-parchment-400">
+         <button
+           className="p-2 text-parchment-400"
+           onClick={() => setShowMobileSearch(true)}
+           aria-label="Buscar"
+         >
            <Search size={20} />
          </button>
       </div>
 
+      {/* Mobile Search Overlay */}
+      <AnimatePresence>
+        {showMobileSearch && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.15 }}
+            className="md:hidden fixed inset-0 z-[200] bg-leather-950/98 flex flex-col"
+          >
+            <div className="flex items-center gap-2 p-4 border-b border-leather-700/50">
+              <Search size={18} className="text-leather-500 flex-shrink-0" />
+              <input
+                ref={mobileSearchRef}
+                type="text"
+                placeholder="Buscar..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 bg-transparent text-parchment-100 placeholder:text-parchment-600 outline-none text-base"
+              />
+              <button
+                onClick={() => {
+                  setShowMobileSearch(false);
+                  setSearchQuery('');
+                }}
+                className="p-2 text-parchment-400 hover:text-parchment-200"
+                aria-label="Fechar busca"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="flex-1 p-4 text-center text-parchment-500 text-sm pt-12">
+              {searchQuery
+                ? 'Busca global em breve...'
+                : 'Digite para buscar'}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Right Actions */}
       <div className="flex items-center gap-2 md:gap-4">
+        {/* Notifications Bell */}
+        <button
+          onClick={handleOpenNotifications}
+          className="relative p-2 rounded-western hover:bg-leather-800/50 transition-colors"
+          title="Notificações"
+          aria-label="Notificações"
+        >
+          <Bell
+            size={18}
+            className={cn(
+              'text-parchment-400',
+              unreadCount > 0 && 'text-gold-400'
+            )}
+          />
+          {unreadCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-rust-500 rounded-full animate-pulse">
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
+        </button>
+
         {/* Refresh Button - Hidden on very small screens if needed, but useful */}
         <button
           onClick={handleRefresh}
           disabled={isLoadingStats}
           className="p-2 rounded-western hover:bg-leather-800/50 transition-colors hidden sm:block"
           title="Atualizar dados"
+          aria-label="Atualizar dados"
         >
           <RefreshCw
             size={18}
@@ -100,12 +191,6 @@ export function Header() {
               isLoadingStats && 'animate-spin'
             )}
           />
-        </button>
-
-        {/* Notifications */}
-        <button className="p-2 rounded-western hover:bg-leather-800/50 transition-colors relative">
-          <Bell size={18} className="text-parchment-400" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-rust-600 rounded-full" />
         </button>
 
         {/* Company Selector */}
@@ -335,6 +420,12 @@ export function Header() {
           </AnimatePresence>
         </div>
       </div>
+      <NotificationPanel
+        isOpen={showNotifications}
+        onClose={handleCloseNotifications}
+        activities={activities}
+        isLoading={isLoadingNotifications}
+      />
     </header>
   );
 }

@@ -2,6 +2,8 @@ import { useState, useMemo, type ReactNode } from 'react';
 import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import type { SortDirection } from '../../lib/types';
+import { EmptyState } from './EmptyState';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 
 interface Column<T> {
   key: string;
@@ -18,7 +20,11 @@ interface TableProps<T> {
   keyExtractor: (item: T) => string | number;
   onRowClick?: (item: T) => void;
   emptyMessage?: string;
+  emptyIcon?: ReactNode;
+  emptyHint?: string;
+  emptyAction?: { label: string; to?: string; onClick?: () => void };
   isLoading?: boolean;
+  mobileCardRender?: (item: T) => ReactNode;
 }
 
 export function Table<T>({
@@ -27,8 +33,13 @@ export function Table<T>({
   keyExtractor,
   onRowClick,
   emptyMessage = 'Nenhum item encontrado',
+  emptyIcon,
+  emptyHint,
+  emptyAction,
   isLoading,
+  mobileCardRender,
 }: TableProps<T>) {
+  const isMobile = useMediaQuery('(max-width: 767px)');
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
@@ -101,8 +112,28 @@ export function Table<T>({
 
   if (data.length === 0) {
     return (
-      <div className="empty-state py-12">
-        <p className="text-parchment-500">{emptyMessage}</p>
+      <EmptyState
+        icon={emptyIcon || <div className="w-12 h-12" />}
+        title={emptyMessage}
+        hint={emptyHint}
+        action={emptyAction}
+        compact
+      />
+    );
+  }
+
+  if (isMobile && mobileCardRender) {
+    return (
+      <div className="divide-y divide-leather-800/50">
+        {sortedData.map((item) => (
+          <div
+            key={keyExtractor(item)}
+            onClick={() => onRowClick?.(item)}
+            className={cn(onRowClick && 'cursor-pointer')}
+          >
+            {mobileCardRender(item)}
+          </div>
+        ))}
       </div>
     );
   }

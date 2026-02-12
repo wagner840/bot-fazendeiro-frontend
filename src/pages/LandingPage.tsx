@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { usePageTitle } from '../hooks/usePageTitle';
 import {
   Wheat,
   Users,
@@ -51,6 +52,7 @@ const planos = [
     nome: 'Mensal',
     preco: 29.9,
     periodo: '/mês',
+    precoMensal: 29.9,
     destaque: false,
     recursos: [
       'Acesso completo ao bot',
@@ -63,8 +65,10 @@ const planos = [
     nome: 'Trimestral',
     preco: 76.5,
     periodo: '/3 meses',
+    precoMensal: 25.5,
     destaque: true,
     economia: '15% OFF',
+    maisPopular: true,
     recursos: [
       'Tudo do plano mensal',
       'Prioridade no suporte',
@@ -76,6 +80,7 @@ const planos = [
     nome: 'Anual',
     preco: 251.16,
     periodo: '/ano',
+    precoMensal: 20.93,
     destaque: false,
     economia: '30% OFF',
     recursos: [
@@ -88,6 +93,7 @@ const planos = [
 ];
 
 export function LandingPage() {
+  usePageTitle('Início');
   return (
     <div className="min-h-screen bg-leather-950">
       {/* Hero Section */}
@@ -232,13 +238,24 @@ export function LandingPage() {
                     : 'bg-leather-900/50 border-leather-700'
                 }`}
               >
-                {plano.economia && (
+                {('maisPopular' in plano && plano.maisPopular) ? (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex gap-2">
+                    <span className="px-3 py-1 bg-gold-500 text-leather-950 text-xs font-bold rounded-full">
+                      Mais Popular
+                    </span>
+                    {plano.economia && (
+                      <span className="px-3 py-1 bg-leather-800 text-gold-400 text-xs font-bold rounded-full border border-gold-500/30">
+                        {plano.economia}
+                      </span>
+                    )}
+                  </div>
+                ) : plano.economia ? (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                     <span className="px-4 py-1 bg-gold-500 text-leather-950 text-sm font-bold rounded-full">
                       {plano.economia}
                     </span>
                   </div>
-                )}
+                ) : null}
 
                 {plano.destaque && (
                   <div className="absolute top-4 right-4">
@@ -254,6 +271,11 @@ export function LandingPage() {
                     R$ {plano.preco.toFixed(2).replace('.', ',')}
                   </span>
                   <span className="text-parchment-500">{plano.periodo}</span>
+                  {plano.periodo !== '/mês' && (
+                    <p className="text-sm text-parchment-500 mt-1">
+                      R$ {plano.precoMensal.toFixed(2).replace('.', ',')}/mês
+                    </p>
+                  )}
                 </div>
 
                 <ul className="space-y-3 mb-8">

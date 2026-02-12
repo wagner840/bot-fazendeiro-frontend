@@ -55,6 +55,7 @@ export function Toast({ toast }: ToastProps) {
       <button
         onClick={() => removeToast(toast.id)}
         className="flex-shrink-0 text-parchment-500 hover:text-parchment-100 transition-colors"
+        aria-label="Fechar notificação"
       >
         <X size={16} />
       </button>
