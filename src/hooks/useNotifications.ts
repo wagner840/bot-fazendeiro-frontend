@@ -18,7 +18,7 @@ export function useNotifications(empresaId: number | null) {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const pollRef = useRef<ReturnType<typeof setInterval>>();
+  const pollRef = useRef<ReturnType<typeof setInterval>>(undefined);
 
   const computeUnread = useCallback(
     (items: ActivityItem[], empId: number) => {
