@@ -4,8 +4,10 @@ import { motion } from 'framer-motion';
 import { LogIn, Shield, Users, Package } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 export function Login() {
+  usePageTitle('Login');
   const { signInWithDiscord, isAuthenticated, loading, error } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();

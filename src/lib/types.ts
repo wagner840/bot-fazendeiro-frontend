@@ -163,6 +163,25 @@ export interface NewOrderForm {
   }[];
 }
 
+// Activity Feed Types
+export type ActivityType =
+  | 'payment_estoque'
+  | 'payment_bonus'
+  | 'payment_ajuste'
+  | 'order_created'
+  | 'order_in_progress'
+  | 'order_delivered';
+
+export interface ActivityItem {
+  id: string;
+  type: ActivityType;
+  timestamp: string;
+  actorName: string;
+  description: string;
+  amount?: number;
+  metadata?: Record<string, unknown>;
+}
+
 // UI Types
 export interface Toast {
   id: string;

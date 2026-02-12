@@ -8,12 +8,15 @@ import {
   DollarSign,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { usePageTitle } from '../hooks/usePageTitle';
 import {
   Card,
   CardHeader,
   CardContent,
   Button,
   Badge,
+  Modal,
+  ModalFooter,
 } from '../components/ui';
 import { BUSINESS_ICONS, type ModoPagamento } from '../lib/types';
 import { formatDate } from '../lib/types';
@@ -33,9 +36,11 @@ const item = {
 };
 
 export function Configuracoes() {
+  usePageTitle('Configurações');
   const { selectedEmpresa, isLoadingEmpresas, addToast, refreshEmpresas } = useApp();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isUpdatingPaymentMode, setIsUpdatingPaymentMode] = useState(false);
+  const [pendingMode, setPendingMode] = useState<ModoPagamento | null>(null);
 
   const businessIcon = selectedEmpresa?.tipo_empresa?.codigo
     ? BUSINESS_ICONS[selectedEmpresa.tipo_empresa.codigo] || '🏢'
@@ -253,18 +258,16 @@ export function Configuracoes() {
                 <Button
                   variant={selectedEmpresa?.modo_pagamento === 'producao' ? 'primary' : 'secondary'}
                   className="w-full justify-start"
-                  onClick={() => handlePaymentModeChange('producao')}
+                  onClick={() => setPendingMode('producao')}
                   disabled={selectedEmpresa?.modo_pagamento === 'producao' || isUpdatingPaymentMode}
-                  isLoading={isUpdatingPaymentMode && selectedEmpresa?.modo_pagamento !== 'producao'}
                 >
                   🌾 Modo Produção
                 </Button>
                 <Button
                   variant={selectedEmpresa?.modo_pagamento === 'entrega' ? 'primary' : 'secondary'}
                   className="w-full justify-start"
-                  onClick={() => handlePaymentModeChange('entrega')}
+                  onClick={() => setPendingMode('entrega')}
                   disabled={selectedEmpresa?.modo_pagamento === 'entrega' || isUpdatingPaymentMode}
-                  isLoading={isUpdatingPaymentMode && selectedEmpresa?.modo_pagamento !== 'entrega'}
                 >
                   📦 Modo Entrega
                 </Button>
@@ -315,6 +318,38 @@ export function Configuracoes() {
           </CardContent>
         </Card>
       </motion.div>
+      {/* Payment Mode Confirmation Modal */}
+      <Modal
+        isOpen={!!pendingMode}
+        onClose={() => setPendingMode(null)}
+        title="Alterar Modo de Pagamento"
+        size="sm"
+      >
+        <p className="text-parchment-400 text-sm">
+          Tem certeza que deseja alterar para modo{' '}
+          <strong className="text-parchment-100">
+            {pendingMode === 'producao' ? 'Produção' : 'Entrega'}
+          </strong>
+          ? Isso afetará como as comissões dos funcionários são calculadas.
+        </p>
+        <ModalFooter>
+          <Button variant="secondary" onClick={() => setPendingMode(null)}>
+            Cancelar
+          </Button>
+          <Button
+            variant="primary"
+            isLoading={isUpdatingPaymentMode}
+            onClick={async () => {
+              if (pendingMode) {
+                await handlePaymentModeChange(pendingMode);
+                setPendingMode(null);
+              }
+            }}
+          >
+            Confirmar
+          </Button>
+        </ModalFooter>
+      </Modal>
     </motion.div>
   );
 }

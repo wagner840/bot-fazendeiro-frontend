@@ -22,7 +22,9 @@ import {
   Cell,
 } from 'recharts';
 import { useApp } from '../context/AppContext';
-import { Card, CardHeader, CardContent, StatCard, StatusStamp, Avatar, Progress } from '../components/ui';
+import { usePageTitle } from '../hooks/usePageTitle';
+import { Card, CardHeader, CardContent, StatCard, StatusStamp, Avatar, Progress, EmptyState } from '../components/ui';
+import { OnboardingChecklist } from '../components/OnboardingChecklist';
 import { formatCurrency, formatDate, type Encomenda, type Funcionario, type RevenueChartData, type ChartDataPoint } from '../lib/types';
 import { getEncomendas, getFuncionarios, getRevenueChartData, getCategoryDistribution } from '../lib/supabase';
 
@@ -40,7 +42,8 @@ const item = {
 };
 
 export function Dashboard() {
-  const { selectedEmpresa, stats } = useApp();
+  usePageTitle('Dashboard');
+  const { selectedEmpresa, stats, isLoadingStats } = useApp();
   const [recentOrders, setRecentOrders] = useState<Encomenda[]>([]);
   const [topEmployees, setTopEmployees] = useState<Funcionario[]>([]);
   const [revenueData, setRevenueData] = useState<RevenueChartData[]>([]);
@@ -104,6 +107,11 @@ export function Dashboard() {
         </div>
       </motion.div>
 
+      {/* Onboarding Checklist - only show after stats loaded */}
+      {stats && !isLoadingStats && (
+        <OnboardingChecklist stats={stats} empresaId={selectedEmpresa.id} />
+      )}
+
       {/* Stats Grid */}
       <motion.div
         variants={item}
@@ -113,7 +121,6 @@ export function Dashboard() {
           icon={<Users size={24} />}
           value={stats?.totalFuncionarios ?? 0}
           label="Funcionários"
-          trend={{ value: 12, isPositive: true }}
         />
         <StatCard
           icon={<Package size={24} />}
@@ -124,13 +131,11 @@ export function Dashboard() {
           icon={<Warehouse size={24} />}
           value={formatCurrency(stats?.valorEstoqueTotal ?? 0)}
           label="Valor em Estoque"
-          trend={{ value: 8, isPositive: true }}
         />
         <StatCard
           icon={<DollarSign size={24} />}
           value={formatCurrency(stats?.receitaMensal ?? 0)}
           label="Receita Mensal"
-          trend={{ value: 15, isPositive: true }}
         />
       </motion.div>
 
@@ -305,10 +310,12 @@ export function Dashboard() {
                   ))}
                 </div>
               ) : recentOrders.length === 0 ? (
-                <div className="p-6 text-center text-parchment-500">
-                  <ClipboardList className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p>Nenhuma encomenda encontrada</p>
-                </div>
+                <EmptyState
+                  icon={<ClipboardList className="w-12 h-12" />}
+                  title="Nenhuma encomenda encontrada"
+                  hint="Use !encomenda codigo quantidade no Discord"
+                  compact
+                />
               ) : (
                 <div className="divide-y divide-leather-800/50">
                   {recentOrders.map((order) => (
@@ -372,10 +379,12 @@ export function Dashboard() {
                   ))}
                 </div>
               ) : topEmployees.length === 0 ? (
-                <div className="p-6 text-center text-parchment-500">
-                  <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p>Nenhum funcionário encontrado</p>
-                </div>
+                <EmptyState
+                  icon={<Users className="w-12 h-12" />}
+                  title="Nenhum funcionário encontrado"
+                  hint="Use !bemvindo @usuario no Discord para cadastrar"
+                  compact
+                />
               ) : (
                 <div className="divide-y divide-leather-800/50">
                   {topEmployees.map((employee, index) => {

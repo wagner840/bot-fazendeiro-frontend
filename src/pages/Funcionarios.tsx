@@ -9,6 +9,7 @@ import {
   History,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { usePageTitle } from '../hooks/usePageTitle';
 import {
   Card,
   CardHeader,
@@ -51,6 +52,7 @@ const item = {
 };
 
 export function Funcionarios() {
+  usePageTitle('Funcionários');
   const { selectedEmpresa, addToast } = useApp();
   const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
   const [valoresEstoque, setValoresEstoque] = useState<Record<number, number>>({});
@@ -315,6 +317,26 @@ export function Funcionarios() {
               keyExtractor={(f) => f.id}
               isLoading={isLoading}
               emptyMessage="Nenhum funcionário encontrado"
+              emptyIcon={<Users className="w-12 h-12" />}
+              emptyHint="Use !bemvindo @usuario no Discord para cadastrar"
+              mobileCardRender={(f) => (
+                <div
+                  className="flex items-center gap-3 p-4 hover:bg-leather-800/30 transition-colors"
+                  onClick={() => openDetails(f)}
+                >
+                  <Avatar name={f.nome} size="md" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-heading text-sm text-parchment-100 truncate">{f.nome}</p>
+                    <p className="text-xs text-parchment-500">{f.discord_id}</p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="font-heading text-sm text-gold-500">{formatCurrency(f.saldo)}</p>
+                    <Badge variant={f.ativo ? 'success' : 'danger'} className="mt-1">
+                      {f.ativo ? 'Ativo' : 'Inativo'}
+                    </Badge>
+                  </div>
+                </div>
+              )}
             />
           </CardContent>
         </Card>

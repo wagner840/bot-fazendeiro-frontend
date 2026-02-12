@@ -2,6 +2,7 @@ import { useEffect, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 interface ModalProps {
   isOpen: boolean;
@@ -27,6 +28,8 @@ export function Modal({
   size = 'md',
   showCloseButton = true,
 }: ModalProps) {
+  const focusTrapRef = useFocusTrap(isOpen);
+
   // Close on escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -51,12 +54,16 @@ export function Modal({
       {isOpen && (
         <div className="modal-overlay" onClick={onClose}>
           <motion.div
+            ref={focusTrapRef}
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ duration: 0.2 }}
             onClick={(e) => e.stopPropagation()}
             className={cn('modal-content', sizes[size])}
+            role="dialog"
+            aria-modal="true"
+            aria-label={title || undefined}
           >
             {/* Header */}
             {(title || showCloseButton) && (
@@ -70,6 +77,7 @@ export function Modal({
                   <button
                     onClick={onClose}
                     className="p-2 rounded-western hover:bg-leather-800/50 transition-colors"
+                    aria-label="Fechar"
                   >
                     <X size={18} className="text-parchment-400" />
                   </button>
