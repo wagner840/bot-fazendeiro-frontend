@@ -11,12 +11,15 @@ export interface UserFrontend {
   criado_em: string;
 }
 
+export type SubscriptionTipo = 'trial' | 'paga' | 'tester';
+
 export interface SubscriptionStatus {
   ativa: boolean;
   status: string | null;
   dias_restantes: number;
   data_expiracao: string | null;
   plano_nome: string | null;
+  tipo: SubscriptionTipo | null;
 }
 
 export interface AuthState {
@@ -38,7 +41,10 @@ export interface AuthContextType extends AuthState {
   isAdmin: boolean;
   isFuncionario: boolean;
   hasActiveSubscription: boolean;
+  isTrial: boolean;
+  isTrialExpired: boolean;
   hasAccess: (requiredRole?: UserRole) => boolean;
+  activateTrial: (guildId: string) => Promise<{ success: boolean; message: string }>;
   refreshUserFrontend: () => Promise<void>;
   refreshSubscription: () => Promise<void>;
   switchGuild: (guildId: string) => Promise<void>;

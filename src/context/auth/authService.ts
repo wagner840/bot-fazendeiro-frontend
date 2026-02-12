@@ -84,10 +84,42 @@ export async function fetchSubscription(guildId: string): Promise<SubscriptionSt
       dias_restantes: 0,
       data_expiracao: null,
       plano_nome: null,
+      tipo: null,
     };
   } catch (err) {
     console.error('Error fetching subscription:', err);
     return null;
+  }
+}
+
+// Activate a 3-day free trial for a guild
+export async function createTrial(
+  guildId: string,
+  discordId?: string
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const { data, error } = await supabase.rpc('criar_trial', {
+      p_guild_id: guildId,
+      p_pagador_discord_id: discordId || null,
+    });
+
+    if (error) {
+      console.error('Error creating trial:', error);
+      return { success: false, message: 'Erro ao ativar período de teste.' };
+    }
+
+    if (data && data.length > 0) {
+      const result = data[0];
+      return {
+        success: result.resultado === 'success',
+        message: result.mensagem,
+      };
+    }
+
+    return { success: false, message: 'Resposta inesperada do servidor.' };
+  } catch (err) {
+    console.error('Error creating trial:', err);
+    return { success: false, message: 'Erro de conexão ao ativar teste.' };
   }
 }
 

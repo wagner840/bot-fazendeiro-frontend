@@ -13,6 +13,7 @@ import {
   Settings,
   X,
   Bell,
+  Clock,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
@@ -30,7 +31,7 @@ export function Header() {
     isLoadingStats,
     setMobileMenuOpen,
   } = useApp();
-  const { user, signOut, isSuperadmin, isAdmin, userFrontends, switchGuild, userFrontend } = useAuth();
+  const { user, signOut, isSuperadmin, isAdmin, userFrontends, switchGuild, userFrontend, isTrial, subscription } = useAuth();
   const navigate = useNavigate();
 
   const [showEmpresaDropdown, setShowEmpresaDropdown] = useState(false);
@@ -155,6 +156,16 @@ export function Header() {
 
       {/* Right Actions */}
       <div className="flex items-center gap-2 md:gap-4">
+        {/* Trial Badge */}
+        {isTrial && subscription && (
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-western bg-gold-500/10 border border-gold-500/30">
+            <Clock size={14} className="text-gold-400" />
+            <span className="text-xs font-heading text-gold-400">
+              Trial: {subscription.dias_restantes}d restante{subscription.dias_restantes !== 1 ? 's' : ''}
+            </span>
+          </div>
+        )}
+
         {/* Notifications Bell */}
         <button
           onClick={handleOpenNotifications}

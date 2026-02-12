@@ -603,7 +603,7 @@ function Navbar() {
               state={{ from: { pathname: '/checkout' } }}
               className="px-5 py-2 bg-gold-500 text-leather-950 font-heading font-bold text-sm rounded-lg hover:bg-gold-400 transition-colors"
             >
-              Comecar Gratis
+              Testar Gratis
             </Link>
           </div>
 
@@ -653,7 +653,7 @@ function Navbar() {
                   state={{ from: { pathname: '/checkout' } }}
                   className="block w-full text-center py-3 bg-gold-500 text-leather-950 font-heading font-bold rounded-lg"
                 >
-                  Comecar Gratis
+                  Testar Gratis
                 </Link>
               </div>
             </div>
@@ -742,7 +742,7 @@ export function LandingPage() {
                   state={{ from: { pathname: '/checkout' } }}
                   className="group inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-gold-600 to-gold-500 text-leather-950 font-heading font-bold text-lg rounded-lg shadow-lg shadow-gold-500/20 hover:shadow-gold-500/40 hover:from-gold-500 hover:to-gold-400 transition-all"
                 >
-                  Comecar Agora
+                  Testar Gratis por 3 Dias
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
                 <button
@@ -1063,7 +1063,7 @@ export function LandingPage() {
           </div>
 
           <p className="text-center text-parchment-600 text-sm mt-8">
-            Pagamento seguro via Pix. Cancele a qualquer momento sem multa.
+            Teste gratis por 3 dias antes de assinar. Pagamento seguro via Pix. Cancele a qualquer momento sem multa.
           </p>
         </div>
       </section>
@@ -1130,7 +1130,7 @@ export function LandingPage() {
                 state={{ from: { pathname: '/checkout' } }}
                 className="group inline-flex items-center justify-center gap-2 px-10 py-5 bg-gradient-to-r from-gold-600 to-gold-500 text-leather-950 font-heading font-bold text-lg rounded-lg shadow-lg shadow-gold-500/20 hover:shadow-gold-500/40 transition-all"
               >
-                Comecar Agora — Gratis
+                Testar Gratis por 3 Dias
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
             </div>
