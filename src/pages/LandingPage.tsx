@@ -22,7 +22,6 @@ import {
   Clock,
   Globe,
   Monitor,
-  Smartphone,
   Menu,
   X,
 } from 'lucide-react';
