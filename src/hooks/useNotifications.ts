@@ -18,7 +18,7 @@ export function useNotifications(empresaId: number | null) {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const pollRef = useRef<ReturnType<typeof setInterval>>();
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const computeUnread = useCallback(
     (items: ActivityItem[], empId: number) => {
@@ -59,7 +59,7 @@ export function useNotifications(empresaId: number | null) {
     refresh();
 
     pollRef.current = setInterval(refresh, POLL_INTERVAL);
-    return () => clearInterval(pollRef.current);
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [empresaId, refresh]);
 
   // Realtime subscriptions
