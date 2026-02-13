@@ -25,6 +25,7 @@ import { useApp } from '../context/AppContext';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { Card, CardHeader, CardContent, StatCard, StatusStamp, Avatar, Progress, EmptyState } from '../components/ui';
 import { OnboardingChecklist } from '../components/OnboardingChecklist';
+import { SubscriptionBanner } from '../components/SubscriptionBanner';
 import { formatCurrency, formatDate, type Encomenda, type Funcionario, type RevenueChartData, type ChartDataPoint } from '../lib/types';
 import { getEncomendas, getFuncionarios, getRevenueChartData, getCategoryDistribution } from '../lib/supabase';
 
@@ -106,6 +107,9 @@ export function Dashboard() {
           </p>
         </div>
       </motion.div>
+
+      {/* Subscription Banner */}
+      <SubscriptionBanner />
 
       {/* Onboarding Checklist - only show after stats loaded */}
       {stats && !isLoadingStats && (
