@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { usePageTitle } from '../../hooks/usePageTitle';
 
 import { useCheckout } from './hooks/useCheckout';
+import { TrialBanner } from './components/TrialBanner';
 import { ActiveSubscription } from './components/ActiveSubscription';
 import { PaymentSuccess } from './components/PaymentSuccess';
 import { PlanSelection } from './components/PlanSelection';
@@ -89,8 +90,10 @@ export function Checkout() {
         </motion.div>
 
         <div className="grid lg:grid-cols-2 gap-8">
-          {/* Plan Selection */}
-          <PlanSelection
+          {/* Trial + Plan Selection */}
+          <div>
+            <TrialBanner />
+            <PlanSelection
             planos={planos}
             selectedPlano={selectedPlano}
             setSelectedPlano={(plano) => {
@@ -105,6 +108,7 @@ export function Checkout() {
             generatingPix={generatingPix}
             generatePix={generatePix}
           />
+          </div>
 
           {/* PIX Payment */}
           <PixPayment
