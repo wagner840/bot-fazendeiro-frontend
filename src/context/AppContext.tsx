@@ -1,8 +1,10 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import type { Empresa, Toast, DashboardStats } from '../lib/types';
-import { getEmpresas, getDashboardStats } from '../lib/supabase';
+import type { Toast } from '../lib/types';
 import { generateId } from '../lib/utils';
 import { useAuth } from './AuthContext';
+import { useEmpresas } from '../hooks/queries/useEmpresas';
+import { useDashboardStats } from '../hooks/queries/useDashboardStats';
+import type { Empresa, DashboardStats } from '../lib/types';
 
 interface AppContextType {
   // Empresa state
@@ -13,7 +15,7 @@ interface AppContextType {
   refreshEmpresas: () => Promise<void>;
   isLoadingEmpresas: boolean;
 
-  // Dashboard stats
+  // Dashboard stats (now React Query powered)
   stats: DashboardStats | null;
   loadStats: () => Promise<void>;
   isLoadingStats: boolean;
@@ -34,13 +36,21 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   // Empresa state
-  const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [selectedEmpresa, setSelectedEmpresa] = useState<Empresa | null>(null);
-  const [isLoadingEmpresas, setIsLoadingEmpresas] = useState(true);
 
-  // Stats
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [isLoadingStats, setIsLoadingStats] = useState(false);
+  // React Query: empresas
+  const {
+    data: empresas = [],
+    isLoading: isLoadingEmpresas,
+    refetch: refetchEmpresas,
+  } = useEmpresas();
+
+  // React Query: dashboard stats
+  const {
+    data: stats = null,
+    isLoading: isLoadingStats,
+    refetch: refetchStats,
+  } = useDashboardStats(selectedEmpresa?.id);
 
   // Toasts
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -49,76 +59,51 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Load empresas (optionally force-selecting a guild's empresa)
-  const loadEmpresas = useCallback(async (forGuildId?: string) => {
-    setIsLoadingEmpresas(true);
-    try {
-      const data = await getEmpresas();
-      setEmpresas(data);
+  // Auto-select first empresa when data loads
+  useEffect(() => {
+    if (!selectedEmpresa && empresas.length > 0) {
+      setSelectedEmpresa(empresas[0]);
+    }
+  }, [empresas, selectedEmpresa]);
 
-      if (forGuildId) {
-        // Guild switch: select the first empresa matching the new guild
-        const match = data.find(e => e.guild_id === forGuildId);
-        if (match) {
-          setSelectedEmpresa(match);
-        } else if (data.length > 0) {
-          setSelectedEmpresa(data[0]);
-        }
-      } else if (!selectedEmpresa && data.length > 0) {
-        // Initial load: auto-select first
+  // Backwards-compatible loadEmpresas (now wraps refetch)
+  const loadEmpresas = useCallback(async (forGuildId?: string) => {
+    const result = await refetchEmpresas();
+    const data = result.data ?? [];
+
+    if (forGuildId) {
+      const match = data.find(e => e.guild_id === forGuildId);
+      if (match) {
+        setSelectedEmpresa(match);
+      } else if (data.length > 0) {
         setSelectedEmpresa(data[0]);
       }
-    } catch (error) {
-      console.error('Error loading empresas:', error);
-      addToast({
-        type: 'error',
-        title: 'Erro ao carregar empresas',
-        message: 'Não foi possível carregar a lista de empresas.',
-      });
-    } finally {
-      setIsLoadingEmpresas(false);
     }
-  }, [selectedEmpresa]);
+  }, [refetchEmpresas]);
 
-  // Refresh empresas and update selected empresa with fresh data
+  // Backwards-compatible refreshEmpresas
   const refreshEmpresas = useCallback(async () => {
-    try {
-      const data = await getEmpresas();
-      setEmpresas(data);
+    const result = await refetchEmpresas();
+    const data = result.data ?? [];
 
-      // Update selectedEmpresa with fresh data if it exists
-      if (selectedEmpresa) {
-        const updated = data.find(e => e.id === selectedEmpresa.id);
-        if (updated) {
-          setSelectedEmpresa(updated);
-        }
+    if (selectedEmpresa) {
+      const updated = data.find(e => e.id === selectedEmpresa.id);
+      if (updated) {
+        setSelectedEmpresa(updated);
       }
-    } catch (error) {
-      console.error('Error refreshing empresas:', error);
     }
-  }, [selectedEmpresa]);
+  }, [refetchEmpresas, selectedEmpresa]);
 
-  // Load stats
+  // Backwards-compatible loadStats
   const loadStats = useCallback(async () => {
-    if (!selectedEmpresa) return;
-
-    setIsLoadingStats(true);
-    try {
-      const data = await getDashboardStats(selectedEmpresa.id);
-      setStats(data);
-    } catch (error) {
-      console.error('Error loading stats:', error);
-    } finally {
-      setIsLoadingStats(false);
-    }
-  }, [selectedEmpresa]);
+    await refetchStats();
+  }, [refetchStats]);
 
   // Toast management
   const addToast = useCallback((toast: Omit<Toast, 'id'>) => {
     const id = generateId();
     setToasts((prev) => [...prev, { ...toast, id }]);
 
-    // Auto-remove after 5 seconds
     setTimeout(() => {
       removeToast(id);
     }, 5000);
@@ -128,32 +113,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  // Initial load
-  useEffect(() => {
-    loadEmpresas();
-  }, []);
-
-  // Load stats when empresa changes
-  useEffect(() => {
-    if (selectedEmpresa) {
-      loadStats();
-    }
-  }, [selectedEmpresa, loadStats]);
-
   // Sync Auth Context <-> App Context (for multi-server support)
   const { switchGuild, userFrontend } = useAuth();
 
-  // When user picks a different empresa, sync AuthContext to match
   useEffect(() => {
       if (selectedEmpresa && userFrontend?.guild_id && selectedEmpresa.guild_id !== userFrontend.guild_id) {
           switchGuild(selectedEmpresa.guild_id);
       }
   }, [selectedEmpresa]);
 
-  // When user switches guild via AuthContext, reload empresas for the new guild
   useEffect(() => {
       if (userFrontend?.guild_id) {
-          // Only reload if the current empresa doesn't match the new guild
           if (!selectedEmpresa || selectedEmpresa.guild_id !== userFrontend.guild_id) {
               loadEmpresas(userFrontend.guild_id);
           }
