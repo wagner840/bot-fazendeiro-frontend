@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Building2,
@@ -6,7 +7,10 @@ import {
   RefreshCw,
   Info,
   DollarSign,
+  Crown,
+  CreditCard,
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import { useApp } from '../context/AppContext';
 import { usePageTitle } from '../hooks/usePageTitle';
 import {
@@ -38,6 +42,7 @@ const item = {
 export function Configuracoes() {
   usePageTitle('Configurações');
   const { selectedEmpresa, isLoadingEmpresas, addToast, refreshEmpresas } = useApp();
+  const { subscription, isAdmin } = useAuth();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isUpdatingPaymentMode, setIsUpdatingPaymentMode] = useState(false);
   const [pendingMode, setPendingMode] = useState<ModoPagamento | null>(null);
@@ -282,6 +287,64 @@ export function Configuracoes() {
 
         </motion.div>
       </div>
+
+      {/* Subscription Card - Admin only */}
+      {isAdmin && subscription?.ativa && (
+        <motion.div variants={item}>
+          <Card>
+            <CardHeader>
+              <h2 className="font-heading text-lg text-parchment-100 flex items-center gap-2">
+                <Crown size={20} className="text-gold-500" />
+                Assinatura
+              </h2>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="p-4 bg-leather-800/30 rounded-western">
+                  <p className="text-xs text-parchment-500 uppercase tracking-wider mb-1">Plano</p>
+                  <p className="font-heading text-parchment-100">{subscription.plano_nome || 'N/A'}</p>
+                </div>
+                <div className="p-4 bg-leather-800/30 rounded-western">
+                  <p className="text-xs text-parchment-500 uppercase tracking-wider mb-1">Dias Restantes</p>
+                  <p className={`font-heading ${(subscription.dias_restantes ?? 0) <= 5 ? 'text-rust-400' : 'text-parchment-100'}`}>
+                    {subscription.dias_restantes ?? 0} dias
+                  </p>
+                </div>
+                <div className="p-4 bg-leather-800/30 rounded-western">
+                  <p className="text-xs text-parchment-500 uppercase tracking-wider mb-1">Expira em</p>
+                  <p className="font-heading text-parchment-100">
+                    {subscription.data_expiracao
+                      ? new Date(subscription.data_expiracao).toLocaleDateString('pt-BR')
+                      : 'Ilimitado'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Progress bar */}
+              {subscription.dias_restantes != null && subscription.dias_restantes <= 30 && (
+                <div className="space-y-2">
+                  <div className="w-full h-2 bg-leather-800 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${
+                        subscription.dias_restantes <= 5 ? 'bg-rust-500' : 'bg-gold-500'
+                      }`}
+                      style={{ width: `${Math.min(100, (subscription.dias_restantes / 30) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <Link
+                to="/checkout"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-gold-500 text-leather-950 font-heading rounded-western hover:bg-gold-400 transition-colors text-sm"
+              >
+                <CreditCard size={16} />
+                Renovar Assinatura
+              </Link>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Commands Reference */}
       <motion.div variants={item}>
