@@ -7,7 +7,7 @@ const BOT_INVITE_URL =
   'https://discord.com/oauth2/authorize?client_id=1462678665690349621&permissions=8&scope=bot%20applications.commands';
 
 export function TrialBanner() {
-  const { activateTrial, userFrontend, user, subscription } = useAuth();
+  const { activateTrial, userFrontend, subscription } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -16,11 +16,6 @@ export function TrialBanner() {
 
   // Hide if user already used trial (tipo === 'trial' means it was used before)
   const alreadyUsedTrial = subscription?.tipo === 'trial';
-
-  const discordId =
-    userFrontend?.discord_id ||
-    user?.user_metadata?.provider_id ||
-    user?.identities?.find((i: { provider: string }) => i.provider === 'discord')?.id;
 
   const handleActivateTrial = async () => {
     const guildId = userFrontend?.guild_id;
