@@ -12,7 +12,7 @@ export { Unauthorized } from './Unauthorized';
 export { GerenciarUsuarios } from './GerenciarUsuarios';
 export { SuperadminPanel } from './SuperadminPanel';
 export { GerenciarEmpresas } from './GerenciarEmpresas';
-export { LandingPage } from './LandingPage';
+export { LandingPage } from './Landing';
 export { Checkout } from './Checkout';
 export { AssinaturaExpirada } from './AssinaturaExpirada';
 export { SuperAdminTesters } from './SuperAdminTesters';
