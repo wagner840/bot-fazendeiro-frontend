@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+﻿import { motion } from 'framer-motion';
 import { ShieldX, ArrowLeft, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -22,24 +22,16 @@ export function Unauthorized() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-leather-900/50 border border-leather-700 rounded-western p-8 max-w-lg w-full text-center"
+        className="bg-leather-900/50 border border-leather-700 rounded-western p-8 max-w-xl w-full text-center"
       >
-        {/* Icon */}
         <div className="w-20 h-20 rounded-full bg-rust-900/30 flex items-center justify-center mx-auto mb-6">
           <ShieldX className="w-10 h-10 text-rust-500" />
         </div>
 
-        {/* Title */}
-        <h1 className="font-display text-3xl text-rust-500 mb-2">
-          Acesso Negado
-        </h1>
+        <h1 className="font-display text-3xl text-rust-500 mb-2">Acesso Negado</h1>
 
-        {/* Message */}
-        <p className="text-parchment-400 mb-6">
-          Você não tem permissão para acessar este sistema.
-        </p>
+        <p className="text-parchment-400 mb-6">{`Voc\u00ea ainda n\u00e3o tem permiss\u00e3o para acessar o painel.`}</p>
 
-        {/* User info */}
         {user && (
           <div className="bg-leather-800/50 rounded-western p-4 mb-6">
             <p className="text-parchment-500 text-sm mb-1">Logado como:</p>
@@ -53,7 +45,7 @@ export function Unauthorized() {
               )}
               <div className="text-left">
                 <p className="text-parchment-200 font-heading">
-                  {user.user_metadata?.full_name || user.user_metadata?.name || 'Usuário Discord'}
+                  {user.user_metadata?.full_name || user.user_metadata?.name || 'Usuario Discord'}
                 </p>
                 <p className="text-parchment-500 text-xs">
                   {user.email || `ID: ${user.user_metadata?.provider_id}`}
@@ -63,39 +55,26 @@ export function Unauthorized() {
           </div>
         )}
 
-        {/* Reasons */}
         <div className="text-left bg-leather-800/30 rounded-western p-4 mb-6">
-          <p className="text-parchment-400 text-sm font-heading mb-2">
-            Possíveis razões:
-          </p>
-          <ul className="text-parchment-500 text-sm space-y-1">
-            <li className="flex items-start gap-2">
-              <span className="text-gold-500">•</span>
-              <span>Sua conta Discord não foi cadastrada pelo administrador do servidor</span>
+          <p className="text-parchment-300 text-sm font-heading mb-2">Como liberar acesso no bot:</p>
+          <ol className="text-parchment-400 text-sm space-y-1 list-decimal pl-4">
+            <li>
+              No Discord, execute <code className="font-mono text-gold-400">/configurar</code> (ou{' '}
+              <code className="font-mono text-gold-400">!configurar</code>) para iniciar o servidor.
             </li>
-            <li className="flex items-start gap-2">
-              <span className="text-gold-500">•</span>
-              <span>Seu acesso foi desativado</span>
+            <li>{`Escolha a base REDM deste servidor e finalize a empresa inicial.`}</li>
+            <li>
+              {`Pe\u00e7a para um administrador do servidor te liberar acesso no painel web.`}
             </li>
-            <li className="flex items-start gap-2">
-              <span className="text-gold-500">•</span>
-              <span>Você não pertence a nenhum servidor com acesso a este sistema</span>
-            </li>
-          </ul>
+          </ol>
         </div>
 
-        {/* Contact */}
         <p className="text-parchment-500 text-sm mb-6">
-          Entre em contato com o administrador do seu servidor Discord para solicitar acesso.
+          {`Se o problema continuar, pe\u00e7a ao administrador para validar assinatura e permiss\u00f5es desse servidor.`}
         </p>
 
-        {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Button
-            variant="outline"
-            onClick={handleBack}
-            className="flex items-center justify-center gap-2"
-          >
+          <Button variant="outline" onClick={handleBack} className="flex items-center justify-center gap-2">
             <ArrowLeft className="w-4 h-4" />
             Voltar
           </Button>
