@@ -5,7 +5,7 @@ import {
   fetchUserFrontends,
   fetchSubscription,
   getDiscordId,
-  createTrial,
+  createTrialIntent,
 } from './authService';
 import type {
   AuthState,
@@ -288,17 +288,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // Activate trial for a guild
-  const activateTrial = async (guildId: string): Promise<{ success: boolean; message: string }> => {
+  const activateTrial = async (_guildId: string): Promise<{ success: boolean; message: string }> => {
     const discordId = state.user ? getDiscordId(state.user) : null;
-    const result = await createTrial(guildId, discordId || undefined);
-
-    if (result.success) {
-      // Refresh subscription after trial activation
-      const subscription = await fetchSubscription(guildId);
-      setState((prev) => ({ ...prev, subscription }));
-    }
-
-    return result;
+    return createTrialIntent(discordId || undefined);
   };
 
   // Computed properties
