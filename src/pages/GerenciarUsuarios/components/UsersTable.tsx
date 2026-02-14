@@ -5,6 +5,7 @@ import type { UserRole, UserFrontend } from '../../../context/AuthContext';
 
 interface UsersTableProps {
   users: UserFrontend[];
+  userNames: Record<string, string>;
   isLoading: boolean;
   currentUserDiscordId: string | undefined;
   isSuperadmin: boolean;
@@ -52,6 +53,7 @@ function getRoleLabel(role: UserRole) {
 
 export function UsersTable({
   users,
+  userNames,
   isLoading,
   currentUserDiscordId,
   isSuperadmin,
@@ -95,7 +97,7 @@ export function UsersTable({
               <thead>
                 <tr className="border-b border-leather-700/50">
                   <th className="text-left px-4 py-3 text-xs text-parchment-500 uppercase tracking-wider">
-                    Discord ID
+                    Usuário
                   </th>
                   <th className="text-left px-4 py-3 text-xs text-parchment-500 uppercase tracking-wider">
                     Permissão
@@ -119,9 +121,14 @@ export function UsersTable({
                         <div className="w-8 h-8 rounded-full bg-leather-700 flex items-center justify-center">
                           {getRoleIcon(user.role)}
                         </div>
-                        <span className="text-parchment-200 font-mono text-sm">
-                          {user.discord_id}
-                        </span>
+                        <div className="min-w-0">
+                          <p className="text-parchment-200 text-sm truncate">
+                            {userNames[user.discord_id] || user.nome || 'Sem nome cadastrado'}
+                          </p>
+                          <p className="text-parchment-500 font-mono text-xs truncate">
+                            ID: {user.discord_id}
+                          </p>
+                        </div>
                       </div>
                     </td>
                     <td className="px-4 py-3">

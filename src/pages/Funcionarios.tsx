@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { usePageTitle } from '../hooks/usePageTitle';
+import { useDiscordUserNames } from '../hooks/useEntityNames';
 import {
   Card,
   CardHeader,
@@ -66,6 +67,7 @@ export function Funcionarios() {
   const [historico, setHistorico] = useState<HistoricoPagamento[]>([]);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [activeTab, setActiveTab] = useState<'estoque' | 'historico'>('estoque');
+  const discordUserNames = useDiscordUserNames(funcionarios.map((f) => f.discord_id));
 
   useEffect(() => {
     loadFuncionarios();
@@ -156,10 +158,12 @@ export function Funcionarios() {
       sortable: true,
       render: (f: Funcionario) => (
         <div className="flex items-center gap-3">
-          <Avatar name={f.nome} size="sm" />
+          <Avatar name={discordUserNames[f.discord_id] || f.nome} size="sm" />
           <div>
-            <p className="font-heading text-parchment-100">{f.nome}</p>
-            <p className="text-xs text-parchment-500">{f.discord_id}</p>
+            <p className="font-heading text-parchment-100">
+              {discordUserNames[f.discord_id] || f.nome || 'Sem nome cadastrado'}
+            </p>
+            <p className="text-xs text-parchment-500">ID: {f.discord_id}</p>
           </div>
         </div>
       ),
@@ -326,8 +330,10 @@ export function Funcionarios() {
                 >
                   <Avatar name={f.nome} size="md" />
                   <div className="flex-1 min-w-0">
-                    <p className="font-heading text-sm text-parchment-100 truncate">{f.nome}</p>
-                    <p className="text-xs text-parchment-500">{f.discord_id}</p>
+                    <p className="font-heading text-sm text-parchment-100 truncate">
+                      {discordUserNames[f.discord_id] || f.nome || 'Sem nome cadastrado'}
+                    </p>
+                    <p className="text-xs text-parchment-500">ID: {f.discord_id}</p>
                   </div>
                   <div className="text-right flex-shrink-0">
                     <p className="font-heading text-sm text-gold-500">{formatCurrency(f.saldo)}</p>
@@ -353,13 +359,19 @@ export function Funcionarios() {
           <div className="space-y-6">
             {/* Employee Info */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-3 sm:p-4 bg-leather-800/30 rounded-western">
-              <Avatar name={selectedFuncionario.nome} size="lg" className="mx-auto sm:mx-0" />
+              <Avatar
+                name={discordUserNames[selectedFuncionario.discord_id] || selectedFuncionario.nome}
+                size="lg"
+                className="mx-auto sm:mx-0"
+              />
               <div className="flex-1 text-center sm:text-left">
                 <p className="font-heading text-base sm:text-lg text-parchment-100">
-                  {selectedFuncionario.nome}
+                  {discordUserNames[selectedFuncionario.discord_id] ||
+                    selectedFuncionario.nome ||
+                    'Sem nome cadastrado'}
                 </p>
                 <p className="text-xs sm:text-sm text-parchment-500 break-all">
-                  Discord: {selectedFuncionario.discord_id}
+                  ID: {selectedFuncionario.discord_id}
                 </p>
                 <p className="text-xs text-parchment-600">
                   Desde: {formatDate(selectedFuncionario.data_cadastro)}

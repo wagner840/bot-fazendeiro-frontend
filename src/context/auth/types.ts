@@ -5,6 +5,7 @@ export type UserRole = 'superadmin' | 'admin' | 'funcionario' | 'none';
 export interface UserFrontend {
   id: number;
   discord_id: string;
+  nome?: string | null;
   guild_id: string | null;
   role: UserRole;
   ativo: boolean;
