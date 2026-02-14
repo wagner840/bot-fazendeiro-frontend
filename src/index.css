@@ -50,6 +50,13 @@
   ::selection {
     @apply bg-gold-500/30 text-parchment-100;
   }
+
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible {
+    @apply outline-none ring-2 ring-gold-500/70 ring-offset-2 ring-offset-leather-950;
+  }
 }
 
 @layer components {

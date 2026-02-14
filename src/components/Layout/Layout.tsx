@@ -4,6 +4,7 @@ import { Header } from './Header';
 import { BottomNav } from './BottomNav';
 import { Toast } from '../ui/Toast';
 import { useApp } from '../../context/AppContext';
+import { Building2 } from 'lucide-react';
 
 export function Layout() {
   const { toasts, isLoadingEmpresas, selectedEmpresa } = useApp();
@@ -24,7 +25,7 @@ export function Layout() {
       <div className="min-h-screen flex items-center justify-center p-8">
         <div className="western-card p-8 max-w-md text-center">
           <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-leather-800 flex items-center justify-center">
-            <span className="text-4xl">🏢</span>
+            <Building2 className="w-10 h-10 text-gold-500" />
           </div>
           <h1 className="font-display text-2xl text-gold-500 mb-3">
             Nenhuma Empresa Encontrada

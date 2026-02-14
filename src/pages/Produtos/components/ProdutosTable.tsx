@@ -1,12 +1,13 @@
 import { motion } from 'framer-motion';
-import { Search, Edit3, Package } from 'lucide-react';
+import { Search, Edit3, Package, PencilLine } from 'lucide-react';
 import {
   Card,
   CardHeader,
   CardContent,
   Table,
-  Button,
   Badge,
+  DataCardMobile,
+  ContextMenuActions,
 } from '../../../components/ui';
 import { formatCurrency, type ProdutoEmpresa } from '../../../lib/types';
 
@@ -39,12 +40,10 @@ export function ProdutosTable({
   const columns = [
     {
       key: 'codigo',
-      header: 'Código',
+      header: 'Codigo',
       sortable: true,
       render: (p: ProdutoEmpresa) => (
-        <span className="font-mono text-sm text-gold-500">
-          {p.produto_referencia?.codigo}
-        </span>
+        <span className="font-mono text-sm text-gold-500">{p.produto_referencia?.codigo}</span>
       ),
     },
     {
@@ -53,33 +52,25 @@ export function ProdutosTable({
       sortable: true,
       render: (p: ProdutoEmpresa) => (
         <div>
-          <p className="font-heading text-parchment-100">
-            {p.produto_referencia?.nome}
-          </p>
-          <p className="text-xs text-parchment-500">
-            {p.produto_referencia?.categoria}
-          </p>
+          <p className="font-heading text-parchment-100">{p.produto_referencia?.nome}</p>
+          <p className="text-xs text-parchment-500">{p.produto_referencia?.categoria}</p>
         </div>
       ),
     },
     {
       key: 'preco_venda',
-      header: 'Preço Venda',
+      header: 'Preco Venda',
       sortable: true,
       render: (p: ProdutoEmpresa) => (
-        <span className="font-heading text-gold-500">
-          {formatCurrency(p.preco_venda)}
-        </span>
+        <span className="font-heading text-gold-500">{formatCurrency(p.preco_venda)}</span>
       ),
     },
     {
       key: 'preco_pagamento_funcionario',
-      header: 'Pgto. Funcionário',
+      header: 'Pgto. Funcionario',
       sortable: true,
       render: (p: ProdutoEmpresa) => (
-        <span className="text-parchment-300">
-          {formatCurrency(p.preco_pagamento_funcionario)}
-        </span>
+        <span className="text-parchment-300">{formatCurrency(p.preco_pagamento_funcionario)}</span>
       ),
     },
     {
@@ -98,26 +89,27 @@ export function ProdutosTable({
       render: (p: ProdutoEmpresa) => {
         const margem = p.preco_venda - p.preco_pagamento_funcionario;
         const percentual = ((margem / p.preco_venda) * 100).toFixed(0);
-        return (
-          <span className="text-sm text-parchment-400">
-            {formatCurrency(margem)} ({percentual}%)
-          </span>
-        );
+        return <span className="text-sm text-parchment-400">{formatCurrency(margem)} ({percentual}%)</span>;
       },
     },
     {
       key: 'actions',
       header: '',
-      width: '80px',
+      width: '70px',
       render: (p: ProdutoEmpresa) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onEditProduct(p)}
-          leftIcon={<Edit3 size={14} />}
-        >
-          Editar
-        </Button>
+        <div className="flex justify-end">
+          <ContextMenuActions
+            actions={[
+              {
+                id: 'edit',
+                label: 'Editar precos',
+                icon: <PencilLine className="w-4 h-4" />,
+                onClick: () => onEditProduct(p),
+              },
+            ]}
+            buttonLabel="Acoes do produto"
+          />
+        </div>
       ),
     },
   ];
@@ -142,10 +134,7 @@ export function ProdutosTable({
               </select>
 
               <div className="relative flex-1 sm:flex-none">
-                <Search
-                  size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-leather-500"
-                />
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-leather-500" />
                 <input
                   type="text"
                   placeholder="Buscar produto..."
@@ -157,9 +146,7 @@ export function ProdutosTable({
             </div>
           }
         >
-          <h2 className="font-heading text-lg text-parchment-100">
-            Catálogo de Produtos
-          </h2>
+          <h2 className="font-heading text-lg text-parchment-100">Catalogo de Produtos</h2>
         </CardHeader>
 
         <CardContent className="p-0">
@@ -171,25 +158,40 @@ export function ProdutosTable({
             emptyMessage="Nenhum produto encontrado"
             emptyIcon={<Package className="w-12 h-12" />}
             emptyHint="Use !configprecos no Discord para cadastrar produtos"
-            mobileCardRender={(p) => (
-              <div
-                className="flex items-center gap-3 p-4 hover:bg-leather-800/30 transition-colors"
-                onClick={() => onEditProduct(p)}
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="font-heading text-sm text-parchment-100 truncate">
-                    {p.produto_referencia?.nome}
-                  </p>
-                  <p className="text-xs text-parchment-500 font-mono">{p.produto_referencia?.codigo}</p>
-                </div>
-                <div className="text-right flex-shrink-0">
-                  <p className="font-heading text-sm text-gold-500">{formatCurrency(p.preco_venda)}</p>
-                  <Badge variant={p.estoque_atual > 0 ? 'gold' : 'danger'} className="mt-1">
-                    {p.estoque_atual} {p.produto_referencia?.unidade || 'un.'}
-                  </Badge>
-                </div>
-              </div>
-            )}
+            mobileCardRender={(p) => {
+              const margem = p.preco_venda - p.preco_pagamento_funcionario;
+              return (
+                <DataCardMobile
+                  title={p.produto_referencia?.nome || 'Produto sem nome'}
+                  subtitle={p.produto_referencia?.codigo}
+                  meta={p.produto_referencia?.categoria}
+                  rightTop={<p className="font-heading text-sm text-gold-500">{formatCurrency(p.preco_venda)}</p>}
+                  rightBottom={
+                    <Badge variant={p.estoque_atual > 0 ? 'gold' : 'danger'}>
+                      {p.estoque_atual} {p.produto_referencia?.unidade || 'un.'}
+                    </Badge>
+                  }
+                  footer={
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs text-parchment-500 truncate">
+                        Margem: {formatCurrency(margem)}
+                      </p>
+                      <ContextMenuActions
+                        actions={[
+                          {
+                            id: 'edit',
+                            label: 'Editar precos',
+                            icon: <Edit3 className="w-4 h-4" />,
+                            onClick: () => onEditProduct(p),
+                          },
+                        ]}
+                        buttonLabel="Acoes do produto"
+                      />
+                    </div>
+                  }
+                />
+              );
+            }}
           />
         </CardContent>
       </Card>

@@ -8,6 +8,7 @@ import {
   TrendingUp,
   Warehouse,
   ArrowUpRight,
+  Landmark,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -23,11 +24,12 @@ import {
 } from 'recharts';
 import { useApp } from '../context/AppContext';
 import { usePageTitle } from '../hooks/usePageTitle';
-import { Card, CardHeader, CardContent, StatCard, StatusStamp, Avatar, Progress, EmptyState } from '../components/ui';
+import { Card, CardHeader, CardContent, StatusStamp, Avatar, Progress, EmptyState, MetricTile } from '../components/ui';
 import { OnboardingChecklist } from '../components/OnboardingChecklist';
 import { SubscriptionBanner } from '../components/SubscriptionBanner';
 import { formatCurrency, formatDate, type Encomenda, type Funcionario, type RevenueChartData, type ChartDataPoint } from '../lib/types';
 import { getEncomendas, getFuncionarios, getRevenueChartData, getCategoryDistribution } from '../lib/supabase';
+import { getBaseScenarioLabel } from '../lib/businessIcons';
 
 const container = {
   hidden: { opacity: 0 },
@@ -95,8 +97,9 @@ export function Dashboard() {
           <h1 className="font-display text-2xl sm:text-3xl text-gold-500">Dashboard</h1>
           <p className="text-parchment-400 mt-1 text-sm sm:text-base">
             Bem-vindo ao painel de controle de {selectedEmpresa.nome}
-            <span className="text-gold-500 ml-2 text-xs sm:text-sm font-semibold px-2 py-0.5 rounded-full bg-gold-500/10 border border-gold-500/20 inline-block mt-1 sm:mt-0">
-              {selectedEmpresa.tipo_empresa?.base_redm_id === 2 ? '🐉 Valiria' : '🏙️ Downtown'}
+            <span className="text-gold-500 ml-2 text-xs sm:text-sm font-semibold px-2 py-0.5 rounded-full bg-gold-500/10 border border-gold-500/20 inline-flex items-center gap-1 mt-1 sm:mt-0">
+              <Landmark size={12} />
+              {getBaseScenarioLabel(selectedEmpresa.tipo_empresa?.base_redm_id)}
             </span>
           </p>
         </div>
@@ -121,25 +124,26 @@ export function Dashboard() {
         variants={item}
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
       >
-        <StatCard
+        <MetricTile
           icon={<Users size={24} />}
           value={stats?.totalFuncionarios ?? 0}
           label="Funcionários"
         />
-        <StatCard
+        <MetricTile
           icon={<Package size={24} />}
           value={stats?.totalProdutos ?? 0}
           label="Produtos Ativos"
         />
-        <StatCard
+        <MetricTile
           icon={<Warehouse size={24} />}
           value={formatCurrency(stats?.valorEstoqueTotal ?? 0)}
           label="Valor em Estoque"
         />
-        <StatCard
+        <MetricTile
           icon={<DollarSign size={24} />}
           value={formatCurrency(stats?.receitaMensal ?? 0)}
           label="Receita Mensal"
+          hint="KPI principal"
         />
       </motion.div>
 

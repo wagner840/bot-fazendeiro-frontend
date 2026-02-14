@@ -22,10 +22,11 @@ import {
   Modal,
   ModalFooter,
 } from '../components/ui';
-import { BUSINESS_ICONS, type ModoPagamento } from '../lib/types';
+import type { ModoPagamento } from '../lib/types';
 import { formatDate } from '../lib/types';
 import { updateModoPagamento } from '../lib/supabase';
 import { useDiscordUserNames, useServerNames } from '../hooks/useEntityNames';
+import { getBaseScenarioLabel, getBusinessIcon } from '../lib/businessIcons';
 
 const container = {
   hidden: { opacity: 0 },
@@ -50,9 +51,7 @@ export function Configuracoes() {
   const serverNames = useServerNames([selectedEmpresa?.guild_id]);
   const userNames = useDiscordUserNames([selectedEmpresa?.proprietario_discord_id]);
 
-  const businessIcon = selectedEmpresa?.tipo_empresa?.codigo
-    ? BUSINESS_ICONS[selectedEmpresa.tipo_empresa.codigo] || '🏢'
-    : '🏢';
+  const BusinessIcon = getBusinessIcon(selectedEmpresa?.tipo_empresa?.codigo);
 
   if (isLoadingEmpresas) {
     return (
@@ -135,8 +134,8 @@ export function Configuracoes() {
             <CardContent className="space-y-6">
               {/* Company Display */}
               <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 p-4 sm:p-6 bg-leather-800/30 rounded-western text-center sm:text-left">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-western bg-gradient-to-br from-leather-700 to-leather-800 flex items-center justify-center text-3xl sm:text-4xl shadow-western-lg shrink-0">
-                  {businessIcon}
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-western bg-gradient-to-br from-leather-700 to-leather-800 flex items-center justify-center shadow-western-lg shrink-0">
+                  <BusinessIcon className="w-8 h-8 sm:w-10 sm:h-10 text-gold-500" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-display text-xl sm:text-2xl text-gold-500 break-words">
@@ -194,9 +193,7 @@ export function Configuracoes() {
                   <p className="text-xs text-parchment-500 uppercase tracking-wider mb-1">
                     Cenário (Base REDM)
                   </p>
-                  <p className="font-heading text-parchment-300 flex items-center gap-2">
-                    {selectedEmpresa?.tipo_empresa?.base_redm_id === 2 ? '🐉 Valiria RP' : '🏙️ Downtown RP'}
-                  </p>
+                  <p className="font-heading text-parchment-300">{getBaseScenarioLabel(selectedEmpresa?.tipo_empresa?.base_redm_id)}</p>
                 </div>
                 <div className="p-4 bg-leather-800/20 rounded-western">
                   <p className="text-xs text-parchment-500 uppercase tracking-wider mb-1">
@@ -272,7 +269,7 @@ export function Configuracoes() {
                   Modo Atual
                 </p>
                 <Badge variant={selectedEmpresa?.modo_pagamento === 'entrega' ? 'success' : 'gold'}>
-                  {selectedEmpresa?.modo_pagamento === 'entrega' ? '📦 Entrega' : '🌾 Produção'}
+                  {selectedEmpresa?.modo_pagamento === 'entrega' ? 'Entrega' : 'Producao'}
                 </Badge>
               </div>
 
@@ -283,7 +280,7 @@ export function Configuracoes() {
                   onClick={() => setPendingMode('producao')}
                   disabled={selectedEmpresa?.modo_pagamento === 'producao' || isUpdatingPaymentMode}
                 >
-                  🌾 Modo Produção
+                  Modo Producao
                 </Button>
                 <Button
                   variant={selectedEmpresa?.modo_pagamento === 'entrega' ? 'primary' : 'secondary'}
@@ -291,7 +288,7 @@ export function Configuracoes() {
                   onClick={() => setPendingMode('entrega')}
                   disabled={selectedEmpresa?.modo_pagamento === 'entrega' || isUpdatingPaymentMode}
                 >
-                  📦 Modo Entrega
+                  Modo Entrega
                 </Button>
               </div>
 

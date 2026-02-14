@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserPlus, Search, Shield, AlertTriangle, Check, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { Card, CardContent, Button, Input } from '../../components/ui';
+import { Card, CardContent, Button, Input, SectionHeaderAction } from '../../components/ui';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { useDiscordUserNames } from '../../hooks/useEntityNames';
 
@@ -56,22 +56,19 @@ export function GerenciarUsuarios() {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="font-display text-2xl sm:text-3xl text-gold-500">Gerenciar Usuários</h1>
-          <p className="text-parchment-400 mt-1 text-sm sm:text-base">
-            Controle de acesso ao sistema
-          </p>
-        </div>
-
-        <Button
-          onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 w-full sm:w-auto"
-        >
-          <UserPlus className="w-4 h-4" />
-          Novo Usuário
-        </Button>
-      </div>
+      <SectionHeaderAction
+        title="Gerenciar Usuários"
+        subtitle="Controle de acesso ao sistema"
+        action={
+          <Button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 w-full sm:w-auto"
+          >
+            <UserPlus className="w-4 h-4" />
+            Novo Usuário
+          </Button>
+        }
+      />
 
       {/* Alerts */}
       <AnimatePresence>
