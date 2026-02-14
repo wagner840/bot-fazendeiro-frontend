@@ -11,6 +11,7 @@ export function AssinaturaExpirada() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [trialLoading, setTrialLoading] = useState(false);
   const [trialError, setTrialError] = useState<string | null>(null);
+  const [trialInfo, setTrialInfo] = useState<string | null>(null);
 
   const guildIds = userFrontends
     .map((uf) => uf.guild_id)
@@ -52,10 +53,11 @@ export function AssinaturaExpirada() {
     if (!userFrontend?.guild_id) return;
     setTrialLoading(true);
     setTrialError(null);
+    setTrialInfo(null);
 
     const result = await activateTrial(userFrontend.guild_id);
     if (result.success) {
-      navigate('/dashboard');
+      setTrialInfo(result.message || 'Intencao de trial registrada. Adicione o bot ao servidor para concluir a ativacao.');
     } else {
       setTrialError(result.message);
     }
@@ -158,6 +160,10 @@ export function AssinaturaExpirada() {
 
           {trialError && (
             <p className="text-rust-400 text-sm">{trialError}</p>
+          )}
+
+          {trialInfo && (
+            <p className="text-emerald-400 text-sm">{trialInfo}</p>
           )}
 
           <Link

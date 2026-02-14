@@ -1,4 +1,4 @@
-import type { User } from '@supabase/supabase-js';
+﻿import type { User } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
 import type { UserFrontend, SubscriptionStatus } from './types';
 
@@ -92,34 +92,32 @@ export async function fetchSubscription(guildId: string): Promise<SubscriptionSt
   }
 }
 
-// Activate a 3-day free trial for a guild
-export async function createTrial(
-  guildId: string,
+// Create trial intent; activation happens when bot joins the guild.
+export async function createTrialIntent(
   discordId?: string
 ): Promise<{ success: boolean; message: string }> {
   try {
-    const { data, error } = await supabase.rpc('criar_trial', {
-      p_guild_id: guildId,
-      p_pagador_discord_id: discordId || null,
+    const { data, error } = await supabase.rpc('criar_trial_intent', {
+      p_discord_id: discordId || null,
     });
 
     if (error) {
-      console.error('Error creating trial:', error);
-      return { success: false, message: 'Erro ao ativar período de teste.' };
+      console.error('Error creating trial intent:', error);
+      return { success: false, message: 'Erro ao iniciar fluxo de teste gratuito.' };
     }
 
     if (data && data.length > 0) {
       const result = data[0];
       return {
-        success: result.resultado === 'success',
+        success: ['success', 'pending_exists'].includes(result.resultado),
         message: result.mensagem,
       };
     }
 
     return { success: false, message: 'Resposta inesperada do servidor.' };
   } catch (err) {
-    console.error('Error creating trial:', err);
-    return { success: false, message: 'Erro de conexão ao ativar teste.' };
+    console.error('Error creating trial intent:', err);
+    return { success: false, message: 'Erro de conexao ao iniciar teste.' };
   }
 }
 

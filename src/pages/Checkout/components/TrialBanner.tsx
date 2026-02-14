@@ -3,13 +3,11 @@ import { motion } from 'framer-motion';
 import { Sparkles, Loader2, AlertCircle, ExternalLink, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 
-const BOT_INVITE_URL =
-  'https://discord.com/oauth2/authorize?client_id=1462678665690349621&permissions=8&scope=bot%20applications.commands';
-
 export function TrialBanner() {
   const { activateTrial, userFrontend, subscription } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
 
   if (subscription?.ativa) return null;
 
@@ -19,18 +17,18 @@ export function TrialBanner() {
     const guildId = userFrontend?.guild_id;
 
     if (!guildId || guildId === 'pending_activation') {
-      window.open(BOT_INVITE_URL, '_blank');
+      setError('Nao foi possivel identificar um servidor valido para ativar o trial. Selecione um servidor no painel e tente novamente.');
       return;
     }
 
     setLoading(true);
     setError(null);
+    setInfo(null);
 
     const result = await activateTrial(guildId);
 
     if (result.success) {
-      window.open(BOT_INVITE_URL, '_blank');
-      window.location.href = '/dashboard';
+      setInfo(result.message || 'Intencao de trial registrada. Adicione o bot ao servidor para concluir a ativacao.');
     } else {
       setError(result.message);
     }
@@ -99,11 +97,22 @@ export function TrialBanner() {
         </p>
       )}
 
+      {info && (
+        <p className="text-emerald-400 text-sm mt-3 flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+          {info}
+        </p>
+      )}
+
       <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-parchment-500">
         <span className="inline-flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5 text-green-400" />Sem cartao de credito</span>
         <span className="inline-flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5 text-green-400" />Sem compromisso</span>
         <span className="inline-flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5 text-green-400" />Acesso completo</span>
       </div>
+
+      <p className="mt-2 text-xs text-parchment-500">
+        Apos clicar, adicione o bot no servidor Discord para finalizar a ativacao automatica do trial.
+      </p>
     </motion.div>
   );
 }
