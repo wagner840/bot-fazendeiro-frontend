@@ -14,13 +14,16 @@ import {
   X,
   Bell,
   Clock,
+  Briefcase,
+  FileSearch,
+  UserCog,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../hooks/useNotifications';
 import { useServerNames } from '../../hooks/useEntityNames';
 import { cn } from '../../lib/utils';
-import { BUSINESS_ICONS } from '../../lib/types';
+import { getBusinessIcon } from '../../lib/businessIcons';
 import { NotificationPanel } from './NotificationPanel';
 
 export function Header() {
@@ -78,6 +81,7 @@ export function Header() {
   };
 
   const roleBadge = getRoleBadge();
+  const SelectedBusinessIcon = getBusinessIcon(selectedEmpresa?.tipo_empresa?.codigo);
 
   return (
     <header className="h-16 border-b border-leather-700/50 bg-leather-900/50 backdrop-blur-sm px-4 md:px-6 flex items-center justify-between gap-4 relative z-50">
@@ -211,8 +215,13 @@ export function Header() {
           <button
             onClick={() => setShowEmpresaDropdown(!showEmpresaDropdown)}
             className="flex items-center gap-2 md:gap-3 px-2 md:px-4 py-2 rounded-western bg-leather-800/50 hover:bg-leather-800 transition-colors border border-leather-700/50"
+            aria-label="Selecionar empresa"
           >
-            <Building2 size={18} className="text-gold-500" />
+            {selectedEmpresa ? (
+              <SelectedBusinessIcon size={18} className="text-gold-500" />
+            ) : (
+              <Building2 size={18} className="text-gold-500" />
+            )}
             <span className="text-sm text-parchment-200 max-w-[100px] md:max-w-[150px] truncate hidden sm:block">
               {selectedEmpresa?.nome || 'Selecionar'}
             </span>
@@ -255,9 +264,7 @@ export function Header() {
                   ) : (
                     <div className="py-1">
                       {empresas.map((empresa) => {
-                        const icon = empresa.tipo_empresa?.codigo
-                          ? BUSINESS_ICONS[empresa.tipo_empresa.codigo] || '🏢'
-                          : '🏢';
+                        const BusinessIcon = getBusinessIcon(empresa.tipo_empresa?.codigo);
                         const isSelected = selectedEmpresa?.id === empresa.id;
 
                         return (
@@ -272,7 +279,7 @@ export function Header() {
                               isSelected && 'bg-gold-500/10'
                             )}
                           >
-                            <span className="text-xl">{icon}</span>
+                            <BusinessIcon className="w-5 h-5 text-gold-500 shrink-0" />
                             <div className="flex-1 min-w-0">
                               <p className="text-sm text-parchment-100 truncate">
                                 {empresa.nome}
@@ -300,6 +307,7 @@ export function Header() {
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
             className="flex items-center gap-2 p-1 rounded-western hover:bg-leather-800/50 transition-colors"
+            aria-label="Abrir menu do usuario"
           >
             {user?.user_metadata?.avatar_url ? (
               <img
@@ -398,16 +406,48 @@ export function Header() {
                   {/* Menu Items */}
                   <div className="py-1">
                     {isAdmin && (
-                      <button
-                        onClick={() => {
-                          setShowUserMenu(false);
-                          navigate('/dashboard/configuracoes');
-                        }}
-                        className="w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-leather-800/50 transition-colors text-parchment-300"
-                      >
-                        <Settings size={16} />
-                        <span className="text-sm">Configurações</span>
-                      </button>
+                      <>
+                        <button
+                          onClick={() => {
+                            setShowUserMenu(false);
+                            navigate('/dashboard/empresas');
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-leather-800/50 transition-colors text-parchment-300"
+                        >
+                          <Briefcase size={16} />
+                          <span className="text-sm">Minhas Empresas</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowUserMenu(false);
+                            navigate('/dashboard/usuarios');
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-leather-800/50 transition-colors text-parchment-300"
+                        >
+                          <UserCog size={16} />
+                          <span className="text-sm">Gerenciar Usuários</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowUserMenu(false);
+                            navigate('/dashboard/auditoria');
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-leather-800/50 transition-colors text-parchment-300"
+                        >
+                          <FileSearch size={16} />
+                          <span className="text-sm">Auditoria</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowUserMenu(false);
+                            navigate('/dashboard/configuracoes');
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-leather-800/50 transition-colors text-parchment-300"
+                        >
+                          <Settings size={16} />
+                          <span className="text-sm">Configurações</span>
+                        </button>
+                      </>
                     )}
 
                     {isSuperadmin && (

@@ -1,13 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import {
-  Users,
-  Search,
-  Eye,
-  DollarSign,
-  Package,
-  History,
-} from 'lucide-react';
+import { Users, Search, Eye, DollarSign, Package, History } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { useDiscordUserNames } from '../hooks/useEntityNames';
@@ -21,6 +14,9 @@ import {
   ModalFooter,
   Avatar,
   Badge,
+  MetricTile,
+  SectionHeaderAction,
+  DataCardMobile,
 } from '../components/ui';
 import {
   formatCurrency,
@@ -53,14 +49,13 @@ const item = {
 };
 
 export function Funcionarios() {
-  usePageTitle('Funcionários');
+  usePageTitle('Funcionarios');
   const { selectedEmpresa, addToast } = useApp();
   const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
   const [valoresEstoque, setValoresEstoque] = useState<Record<number, number>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Modal states
   const [selectedFuncionario, setSelectedFuncionario] = useState<Funcionario | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [estoque, setEstoque] = useState<EstoqueProduto[]>([]);
@@ -83,27 +78,24 @@ export function Funcionarios() {
         getEstoqueEmpresa(selectedEmpresa.id),
         getProdutosEmpresa(selectedEmpresa.id),
       ]);
-      
+
       setFuncionarios(funcs);
 
-      // Calculate stock value per employee
       const valores: Record<number, number> = {};
-      
-      // Create a map of product prices
       const precosMap: Record<string, number> = {};
-      produtosData.forEach(p => {
+
+      produtosData.forEach((p) => {
         if (p.produto_referencia?.codigo) {
-           precosMap[p.produto_referencia.codigo.toLowerCase()] = p.preco_pagamento_funcionario || 0;
+          precosMap[p.produto_referencia.codigo.toLowerCase()] = p.preco_pagamento_funcionario || 0;
         }
       });
 
-      // Sum up stock values
-      estoqueData.forEach(item => {
-        const funcId = item.funcionario_id;
-        const codigo = item.produto_codigo.toLowerCase();
+      estoqueData.forEach((stockItem) => {
+        const funcId = stockItem.funcionario_id;
+        const codigo = stockItem.produto_codigo.toLowerCase();
         const preco = precosMap[codigo] || 0;
-        const valor = (item.quantidade || 0) * preco;
-        
+        const valor = (stockItem.quantidade || 0) * preco;
+
         if (!valores[funcId]) valores[funcId] = 0;
         valores[funcId] += valor;
       });
@@ -113,7 +105,7 @@ export function Funcionarios() {
       console.error('Error loading funcionarios:', error);
       addToast({
         type: 'error',
-        title: 'Erro ao carregar funcionários',
+        title: 'Erro ao carregar funcionarios',
       });
     } finally {
       setIsLoading(false);
@@ -144,25 +136,20 @@ export function Funcionarios() {
     }
   }
 
-  const filteredFuncionarios = filterBySearch(funcionarios, searchQuery, [
-    'nome',
-    'discord_id',
-  ]);
-
+  const filteredFuncionarios = filterBySearch(funcionarios, searchQuery, ['nome', 'discord_id']);
   const totalSaldo = funcionarios.reduce((sum, f) => sum + f.saldo, 0);
+  const mediaSaldo = funcionarios.length ? totalSaldo / funcionarios.length : 0;
 
   const columns = [
     {
       key: 'nome',
-      header: 'Funcionário',
+      header: 'Funcionario',
       sortable: true,
       render: (f: Funcionario) => (
         <div className="flex items-center gap-3">
           <Avatar name={discordUserNames[f.discord_id] || f.nome} size="sm" />
           <div>
-            <p className="font-heading text-parchment-100">
-              {discordUserNames[f.discord_id] || f.nome || 'Sem nome cadastrado'}
-            </p>
+            <p className="font-heading text-parchment-100">{discordUserNames[f.discord_id] || f.nome || 'Sem nome cadastrado'}</p>
             <p className="text-xs text-parchment-500">ID: {f.discord_id}</p>
           </div>
         </div>
@@ -174,14 +161,12 @@ export function Funcionarios() {
       sortable: true,
       render: (f: Funcionario) => (
         <div className="flex flex-col">
-            <span className="font-heading text-gold-500">
-            {formatCurrency(f.saldo)}
+          <span className="font-heading text-gold-500">{formatCurrency(f.saldo)}</span>
+          {valoresEstoque[f.id] > 0 && (
+            <span className="text-xs text-parchment-500" title="Valor acumulado em estoque (nao pago)">
+              + {formatCurrency(valoresEstoque[f.id])} em estoque
             </span>
-            {valoresEstoque[f.id] > 0 && (
-                <span className="text-xs text-parchment-500" title="Valor acumulado em estoque (não pago)">
-                    + {formatCurrency(valoresEstoque[f.id])} em estoque
-                </span>
-            )}
+          )}
         </div>
       ),
     },
@@ -189,30 +174,19 @@ export function Funcionarios() {
       key: 'data_cadastro',
       header: 'Desde',
       sortable: true,
-      render: (f: Funcionario) => (
-        <span className="text-parchment-400">{formatDate(f.data_cadastro)}</span>
-      ),
+      render: (f: Funcionario) => <span className="text-parchment-400">{formatDate(f.data_cadastro)}</span>,
     },
     {
       key: 'ativo',
       header: 'Status',
-      render: (f: Funcionario) => (
-        <Badge variant={f.ativo ? 'success' : 'danger'}>
-          {f.ativo ? 'Ativo' : 'Inativo'}
-        </Badge>
-      ),
+      render: (f: Funcionario) => <Badge variant={f.ativo ? 'success' : 'danger'}>{f.ativo ? 'Ativo' : 'Inativo'}</Badge>,
     },
     {
       key: 'actions',
       header: '',
       width: '100px',
       render: (f: Funcionario) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => openDetails(f)}
-          leftIcon={<Eye size={14} />}
-        >
+        <Button variant="ghost" size="sm" onClick={() => openDetails(f)} leftIcon={<Eye size={14} />}>
           Detalhes
         </Button>
       ),
@@ -220,87 +194,27 @@ export function Funcionarios() {
   ];
 
   return (
-    <motion.div
-      variants={container}
-      initial="hidden"
-      animate="show"
-      className="space-y-6"
-    >
-      {/* Page Header */}
-      <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="font-display text-2xl sm:text-3xl text-gold-500">Funcionários</h1>
-          <p className="text-parchment-400 mt-1 text-sm sm:text-base">
-            Gerencie a equipe de {selectedEmpresa?.nome}
-          </p>
-        </div>
+    <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
+      <motion.div variants={item}>
+        <SectionHeaderAction title="Funcionarios" subtitle={`Gerencie a equipe de ${selectedEmpresa?.nome || 'sua empresa'}`} />
       </motion.div>
 
-      {/* Stats */}
       <motion.div variants={item} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-western bg-leather-800/50">
-              <Users className="w-6 h-6 text-gold-500" />
-            </div>
-            <div>
-              <p className="text-2xl font-display text-gold-500">
-                {funcionarios.length}
-              </p>
-              <p className="text-xs text-parchment-500 uppercase tracking-wider">
-                Total de Funcionários
-              </p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-western bg-leather-800/50">
-              <DollarSign className="w-6 h-6 text-gold-500" />
-            </div>
-            <div>
-              <p className="text-2xl font-display text-gold-500">
-                {formatCurrency(totalSaldo)}
-              </p>
-              <p className="text-xs text-parchment-500 uppercase tracking-wider">
-                Saldo Total a Pagar
-              </p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-western bg-leather-800/50">
-              <Package className="w-6 h-6 text-gold-500" />
-            </div>
-            <div>
-              <p className="text-2xl font-display text-gold-500">
-                {formatCurrency(totalSaldo * 0.25)}
-              </p>
-              <p className="text-xs text-parchment-500 uppercase tracking-wider">
-                Média Saldo/Funcionário
-              </p>
-            </div>
-          </div>
-        </Card>
+        <MetricTile icon={<Users className="w-6 h-6" />} value={funcionarios.length} label="Total de Funcionarios" />
+        <MetricTile icon={<DollarSign className="w-6 h-6" />} value={formatCurrency(totalSaldo)} label="Saldo total a pagar" />
+        <MetricTile icon={<Package className="w-6 h-6" />} value={formatCurrency(mediaSaldo)} label="Media por funcionario" />
       </motion.div>
 
-      {/* Main Content */}
       <motion.div variants={item}>
         <Card>
           <CardHeader
             action={
               <div className="flex items-center gap-3 w-full sm:w-auto">
                 <div className="relative flex-1 sm:flex-none">
-                  <Search
-                    size={16}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-leather-500"
-                  />
+                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-leather-500" />
                   <input
                     type="text"
-                    placeholder="Buscar funcionário..."
+                    placeholder="Buscar funcionario..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="input-western pl-9 py-2 text-sm w-full sm:w-64"
@@ -309,9 +223,7 @@ export function Funcionarios() {
               </div>
             }
           >
-            <h2 className="font-heading text-lg text-parchment-100">
-              Lista de Funcionários
-            </h2>
+            <h2 className="font-heading text-lg text-parchment-100">Lista de Funcionarios</h2>
           </CardHeader>
 
           <CardContent className="p-0">
@@ -320,90 +232,59 @@ export function Funcionarios() {
               columns={columns}
               keyExtractor={(f) => f.id}
               isLoading={isLoading}
-              emptyMessage="Nenhum funcionário encontrado"
+              emptyMessage="Nenhum funcionario encontrado"
               emptyIcon={<Users className="w-12 h-12" />}
               emptyHint="Use !bemvindo @usuario no Discord para cadastrar"
               mobileCardRender={(f) => (
-                <div
-                  className="flex items-center gap-3 p-4 hover:bg-leather-800/30 transition-colors"
-                  onClick={() => openDetails(f)}
-                >
-                  <Avatar name={f.nome} size="md" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-heading text-sm text-parchment-100 truncate">
-                      {discordUserNames[f.discord_id] || f.nome || 'Sem nome cadastrado'}
-                    </p>
-                    <p className="text-xs text-parchment-500">ID: {f.discord_id}</p>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="font-heading text-sm text-gold-500">{formatCurrency(f.saldo)}</p>
-                    <Badge variant={f.ativo ? 'success' : 'danger'} className="mt-1">
-                      {f.ativo ? 'Ativo' : 'Inativo'}
-                    </Badge>
-                  </div>
-                </div>
+                <DataCardMobile
+                  title={discordUserNames[f.discord_id] || f.nome || 'Sem nome cadastrado'}
+                  subtitle={`ID: ${f.discord_id}`}
+                  meta={`Desde ${formatDate(f.data_cadastro)}`}
+                  rightTop={<p className="font-heading text-sm text-gold-500">{formatCurrency(f.saldo)}</p>}
+                  rightBottom={<Badge variant={f.ativo ? 'success' : 'danger'}>{f.ativo ? 'Ativo' : 'Inativo'}</Badge>}
+                  footer={
+                    <div className="flex items-center justify-end">
+                      <Button variant="ghost" size="sm" onClick={() => openDetails(f)} leftIcon={<Eye size={14} />}>
+                        Detalhes
+                      </Button>
+                    </div>
+                  }
+                />
               )}
             />
           </CardContent>
         </Card>
       </motion.div>
 
-      {/* Details Modal */}
-      <Modal
-        isOpen={showDetailsModal}
-        onClose={() => setShowDetailsModal(false)}
-        title={selectedFuncionario?.nome}
-        size="lg"
-      >
+      <Modal isOpen={showDetailsModal} onClose={() => setShowDetailsModal(false)} title={selectedFuncionario?.nome} size="lg">
         {selectedFuncionario && (
           <div className="space-y-6">
-            {/* Employee Info */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-3 sm:p-4 bg-leather-800/30 rounded-western">
-              <Avatar
-                name={discordUserNames[selectedFuncionario.discord_id] || selectedFuncionario.nome}
-                size="lg"
-                className="mx-auto sm:mx-0"
-              />
+              <Avatar name={discordUserNames[selectedFuncionario.discord_id] || selectedFuncionario.nome} size="lg" className="mx-auto sm:mx-0" />
               <div className="flex-1 text-center sm:text-left">
                 <p className="font-heading text-base sm:text-lg text-parchment-100">
-                  {discordUserNames[selectedFuncionario.discord_id] ||
-                    selectedFuncionario.nome ||
-                    'Sem nome cadastrado'}
+                  {discordUserNames[selectedFuncionario.discord_id] || selectedFuncionario.nome || 'Sem nome cadastrado'}
                 </p>
-                <p className="text-xs sm:text-sm text-parchment-500 break-all">
-                  ID: {selectedFuncionario.discord_id}
-                </p>
-                <p className="text-xs text-parchment-600">
-                  Desde: {formatDate(selectedFuncionario.data_cadastro)}
-                </p>
+                <p className="text-xs sm:text-sm text-parchment-500 break-all">ID: {selectedFuncionario.discord_id}</p>
+                <p className="text-xs text-parchment-600">Desde: {formatDate(selectedFuncionario.data_cadastro)}</p>
               </div>
               <div className="text-center sm:text-right border-t sm:border-t-0 pt-3 sm:pt-0 mt-2 sm:mt-0 border-leather-700/50">
-                <p className="text-xs text-parchment-500 uppercase">Saldo Atual</p>
-                <p className="text-xl sm:text-2xl font-display text-gold-500">
-                  {formatCurrency(selectedFuncionario.saldo)}
-                </p>
+                <p className="text-xs text-parchment-500 uppercase">Saldo atual</p>
+                <p className="text-xl sm:text-2xl font-display text-gold-500">{formatCurrency(selectedFuncionario.saldo)}</p>
               </div>
             </div>
 
-            {/* Tabs */}
             <div className="tabs-western">
-              <button
-                className={`tab-western ${activeTab === 'estoque' ? 'active' : ''}`}
-                onClick={() => setActiveTab('estoque')}
-              >
+              <button className={`tab-western ${activeTab === 'estoque' ? 'active' : ''}`} onClick={() => setActiveTab('estoque')}>
                 <Package size={14} className="inline mr-2" />
                 Estoque
               </button>
-              <button
-                className={`tab-western ${activeTab === 'historico' ? 'active' : ''}`}
-                onClick={() => setActiveTab('historico')}
-              >
+              <button className={`tab-western ${activeTab === 'historico' ? 'active' : ''}`} onClick={() => setActiveTab('historico')}>
                 <History size={14} className="inline mr-2" />
-                Histórico
+                Historico
               </button>
             </div>
 
-            {/* Tab Content */}
             {loadingDetails ? (
               <div className="py-8 text-center">
                 <div className="w-8 h-8 mx-auto border-2 border-leather-700 border-t-gold-500 rounded-full animate-spin" />
@@ -411,24 +292,15 @@ export function Funcionarios() {
             ) : activeTab === 'estoque' ? (
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {estoque.length === 0 ? (
-                  <p className="text-center text-parchment-500 py-4">
-                    Nenhum item em estoque
-                  </p>
+                  <p className="text-center text-parchment-500 py-4">Nenhum item em estoque</p>
                 ) : (
-                  estoque.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between p-3 bg-leather-800/30 rounded-western"
-                    >
+                  estoque.map((stockItem) => (
+                    <div key={stockItem.id} className="flex items-center justify-between p-3 bg-leather-800/30 rounded-western">
                       <div>
-                        <p className="font-heading text-sm text-parchment-100">
-                          {item.produto_codigo}
-                        </p>
-                        <p className="text-xs text-parchment-500">
-                          Atualizado: {formatDate(item.data_atualizacao)}
-                        </p>
+                        <p className="font-heading text-sm text-parchment-100">{stockItem.produto_codigo}</p>
+                        <p className="text-xs text-parchment-500">Atualizado: {formatDate(stockItem.data_atualizacao)}</p>
                       </div>
-                      <Badge variant="gold">{item.quantidade} un.</Badge>
+                      <Badge variant="gold">{stockItem.quantidade} un.</Badge>
                     </div>
                   ))
                 )}
@@ -436,29 +308,16 @@ export function Funcionarios() {
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {historico.length === 0 ? (
-                  <p className="text-center text-parchment-500 py-4">
-                    Nenhum pagamento registrado
-                  </p>
+                  <p className="text-center text-parchment-500 py-4">Nenhum pagamento registrado</p>
                 ) : (
                   historico.map((pag) => (
-                    <div
-                      key={pag.id}
-                      className="flex items-center justify-between p-3 bg-leather-800/30 rounded-western"
-                    >
+                    <div key={pag.id} className="flex items-center justify-between p-3 bg-leather-800/30 rounded-western">
                       <div>
-                        <p className="font-heading text-sm text-parchment-100">
-                          {pag.tipo}
-                        </p>
-                        <p className="text-xs text-parchment-500">
-                          {pag.descricao}
-                        </p>
-                        <p className="text-xs text-parchment-600">
-                          {formatDateTime(pag.data_pagamento)}
-                        </p>
+                        <p className="font-heading text-sm text-parchment-100">{pag.tipo}</p>
+                        <p className="text-xs text-parchment-500">{pag.descricao}</p>
+                        <p className="text-xs text-parchment-600">{formatDateTime(pag.data_pagamento)}</p>
                       </div>
-                      <span className="font-heading text-gold-500">
-                        {formatCurrency(pag.valor)}
-                      </span>
+                      <span className="font-heading text-gold-500">{formatCurrency(pag.valor)}</span>
                     </div>
                   ))
                 )}

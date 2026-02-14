@@ -1,7 +1,8 @@
 import { Users, Shield, User, Edit2, Trash2, Check, X } from 'lucide-react';
-import { Card, CardHeader, CardContent } from '../../../components/ui';
+import { Card, CardHeader, CardContent, DataCardMobile, ContextMenuActions } from '../../../components/ui';
 import { cn } from '../../../lib/utils';
 import type { UserRole, UserFrontend } from '../../../context/AuthContext';
+import { useMediaQuery } from '../../../hooks/useMediaQuery';
 
 interface UsersTableProps {
   users: UserFrontend[];
@@ -47,7 +48,7 @@ function getRoleLabel(role: UserRole) {
     case 'admin':
       return 'Admin';
     default:
-      return 'Funcionário';
+      return 'Funcionario';
   }
 }
 
@@ -65,12 +66,55 @@ export function UsersTable({
   onToggleActive,
   onSelectUserForDelete,
 }: UsersTableProps) {
+  const isMobile = useMediaQuery('(max-width: 767px)');
+
+  const canManageUser = (user: UserFrontend) =>
+    user.discord_id !== currentUserDiscordId && (isSuperadmin || user.role !== 'superadmin');
+
+  const renderRoleCell = (user: UserFrontend) => {
+    if (editingUser !== user.id) {
+      return (
+        <span className={cn('text-xs px-2 py-1 rounded border', getRoleBadge(user.role))}>
+          {getRoleLabel(user.role)}
+        </span>
+      );
+    }
+
+    return (
+      <div className="flex items-center gap-2">
+        <select
+          value={editRole}
+          onChange={(e) => setEditRole(e.target.value as UserRole)}
+          className="input-western py-1 px-2 text-sm"
+        >
+          <option value="funcionario">Funcionario</option>
+          <option value="admin">Admin</option>
+          {isSuperadmin && <option value="superadmin">Superadmin</option>}
+        </select>
+        <button
+          onClick={() => onUpdateRole(user.id, editRole)}
+          className="p-1 text-green-400 hover:text-green-300"
+          aria-label="Salvar permissao"
+        >
+          <Check className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => setEditingUser(null)}
+          className="p-1 text-rust-400 hover:text-rust-300"
+          aria-label="Cancelar edicao"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+    );
+  };
+
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
           <Users className="w-5 h-5 text-gold-500" />
-          <h2 className="font-heading text-lg text-parchment-100">Usuários ({users.length})</h2>
+          <h2 className="font-heading text-lg text-parchment-100">Usuarios ({users.length})</h2>
         </div>
       </CardHeader>
       <CardContent className="p-0">
@@ -89,7 +133,59 @@ export function UsersTable({
         ) : users.length === 0 ? (
           <div className="p-8 text-center text-parchment-500">
             <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>Nenhum usuário encontrado</p>
+            <p>Nenhum usuario encontrado</p>
+          </div>
+        ) : isMobile ? (
+          <div className="divide-y divide-leather-800/50">
+            {users.map((user) => (
+              <DataCardMobile
+                key={user.id}
+                title={userNames[user.discord_id] || user.nome || 'Sem nome cadastrado'}
+                subtitle={`ID: ${user.discord_id}`}
+                meta={getRoleLabel(user.role)}
+                rightTop={
+                  <button
+                    onClick={() => onToggleActive(user)}
+                    className={cn(
+                      'text-xs px-2 py-1 rounded border transition-colors',
+                      user.ativo
+                        ? 'bg-green-900/30 text-green-400 border-green-700 hover:bg-green-900/50'
+                        : 'bg-rust-900/30 text-rust-400 border-rust-700 hover:bg-rust-900/50'
+                    )}
+                  >
+                    {user.ativo ? 'Ativo' : 'Inativo'}
+                  </button>
+                }
+                rightBottom={renderRoleCell(user)}
+                footer={
+                  canManageUser(user) ? (
+                    <div className="flex justify-end">
+                      <ContextMenuActions
+                        actions={[
+                          {
+                            id: 'edit',
+                            label: 'Editar permissao',
+                            icon: <Edit2 className="w-4 h-4" />,
+                            onClick: () => {
+                              setEditingUser(user.id);
+                              setEditRole(user.role);
+                            },
+                          },
+                          {
+                            id: 'delete',
+                            label: 'Remover usuario',
+                            icon: <Trash2 className="w-4 h-4" />,
+                            tone: 'danger',
+                            onClick: () => onSelectUserForDelete(user),
+                          },
+                        ]}
+                        buttonLabel="Acoes do usuario"
+                      />
+                    </div>
+                  ) : null
+                }
+              />
+            ))}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -97,16 +193,16 @@ export function UsersTable({
               <thead>
                 <tr className="border-b border-leather-700/50">
                   <th className="text-left px-4 py-3 text-xs text-parchment-500 uppercase tracking-wider">
-                    Usuário
+                    Usuario
                   </th>
                   <th className="text-left px-4 py-3 text-xs text-parchment-500 uppercase tracking-wider">
-                    Permissão
+                    Permissao
                   </th>
                   <th className="text-left px-4 py-3 text-xs text-parchment-500 uppercase tracking-wider">
                     Status
                   </th>
                   <th className="text-right px-4 py-3 text-xs text-parchment-500 uppercase tracking-wider">
-                    Ações
+                    Acoes
                   </th>
                 </tr>
               </thead>
@@ -125,45 +221,11 @@ export function UsersTable({
                           <p className="text-parchment-200 text-sm truncate">
                             {userNames[user.discord_id] || user.nome || 'Sem nome cadastrado'}
                           </p>
-                          <p className="text-parchment-500 font-mono text-xs truncate">
-                            ID: {user.discord_id}
-                          </p>
+                          <p className="text-parchment-500 font-mono text-xs truncate">ID: {user.discord_id}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3">
-                      {editingUser === user.id ? (
-                        <div className="flex items-center gap-2">
-                          <select
-                            value={editRole}
-                            onChange={(e) => setEditRole(e.target.value as UserRole)}
-                            className="input-western py-1 px-2 text-sm"
-                          >
-                            <option value="funcionario">Funcionário</option>
-                            <option value="admin">Admin</option>
-                            {isSuperadmin && <option value="superadmin">Superadmin</option>}
-                          </select>
-                          <button
-                            onClick={() => onUpdateRole(user.id, editRole)}
-                            className="p-1 text-green-400 hover:text-green-300"
-                          >
-                            <Check className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => setEditingUser(null)}
-                            className="p-1 text-rust-400 hover:text-rust-300"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <span
-                          className={cn('text-xs px-2 py-1 rounded border', getRoleBadge(user.role))}
-                        >
-                          {getRoleLabel(user.role)}
-                        </span>
-                      )}
-                    </td>
+                    <td className="px-4 py-3">{renderRoleCell(user)}</td>
                     <td className="px-4 py-3">
                       <button
                         onClick={() => onToggleActive(user)}
@@ -179,28 +241,29 @@ export function UsersTable({
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        {user.discord_id !== currentUserDiscordId &&
-                          (isSuperadmin || user.role !== 'superadmin') && (
-                            <>
-                              <button
-                                onClick={() => {
-                                  setEditingUser(user.id);
-                                  setEditRole(user.role);
-                                }}
-                                className="p-2 text-parchment-400 hover:text-gold-400 transition-colors"
-                                title="Editar permissão"
-                              >
-                                <Edit2 className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => onSelectUserForDelete(user)}
-                                className="p-2 text-parchment-400 hover:text-rust-400 transition-colors"
-                                title="Remover usuário"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </>
-                          )}
+                        {canManageUser(user) && (
+                          <>
+                            <button
+                              onClick={() => {
+                                setEditingUser(user.id);
+                                setEditRole(user.role);
+                              }}
+                              className="p-2 text-parchment-400 hover:text-gold-400 transition-colors"
+                              title="Editar permissao"
+                              aria-label="Editar permissao"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => onSelectUserForDelete(user)}
+                              className="p-2 text-parchment-400 hover:text-rust-400 transition-colors"
+                              title="Remover usuario"
+                              aria-label="Remover usuario"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
