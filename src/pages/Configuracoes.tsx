@@ -25,6 +25,7 @@ import {
 import { BUSINESS_ICONS, type ModoPagamento } from '../lib/types';
 import { formatDate } from '../lib/types';
 import { updateModoPagamento } from '../lib/supabase';
+import { useDiscordUserNames, useServerNames } from '../hooks/useEntityNames';
 
 const container = {
   hidden: { opacity: 0 },
@@ -46,6 +47,8 @@ export function Configuracoes() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isUpdatingPaymentMode, setIsUpdatingPaymentMode] = useState(false);
   const [pendingMode, setPendingMode] = useState<ModoPagamento | null>(null);
+  const serverNames = useServerNames([selectedEmpresa?.guild_id]);
+  const userNames = useDiscordUserNames([selectedEmpresa?.proprietario_discord_id]);
 
   const businessIcon = selectedEmpresa?.tipo_empresa?.codigo
     ? BUSINESS_ICONS[selectedEmpresa.tipo_empresa.codigo] || '🏢'
@@ -165,11 +168,18 @@ export function Configuracoes() {
                 </div>
                 <div className="p-4 bg-leather-800/20 rounded-western">
                   <p className="text-xs text-parchment-500 uppercase tracking-wider mb-1">
-                    Guild ID (Discord)
+                    Servidor (Discord)
                   </p>
-                  <p className="font-mono text-sm text-parchment-300">
-                    {selectedEmpresa?.guild_id || '-'}
+                  <p className="font-heading text-parchment-300">
+                    {selectedEmpresa?.guild_id
+                      ? serverNames[selectedEmpresa.guild_id] || 'Sem nome cadastrado'
+                      : '-'}
                   </p>
+                  {selectedEmpresa?.guild_id && (
+                    <p className="font-mono text-xs text-parchment-500 mt-1">
+                      ID: {selectedEmpresa.guild_id}
+                    </p>
+                  )}
                 </div>
                 <div className="p-4 bg-leather-800/20 rounded-western">
                   <p className="text-xs text-parchment-500 uppercase tracking-wider mb-1">
@@ -192,9 +202,16 @@ export function Configuracoes() {
                   <p className="text-xs text-parchment-500 uppercase tracking-wider mb-1">
                     Proprietário
                   </p>
-                  <p className="font-mono text-sm text-parchment-300">
-                    {selectedEmpresa?.proprietario_discord_id || '-'}
+                  <p className="font-heading text-parchment-300">
+                    {selectedEmpresa?.proprietario_discord_id
+                      ? userNames[selectedEmpresa.proprietario_discord_id] || 'Sem nome cadastrado'
+                      : '-'}
                   </p>
+                  {selectedEmpresa?.proprietario_discord_id && (
+                    <p className="font-mono text-xs text-parchment-500 mt-1">
+                      ID: {selectedEmpresa.proprietario_discord_id}
+                    </p>
+                  )}
                 </div>
               </div>
 

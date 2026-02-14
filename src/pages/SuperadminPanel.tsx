@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { useDiscordUserNames } from '../hooks/useEntityNames';
 
 interface Servidor {
   id: number;
@@ -43,6 +44,7 @@ export function SuperadminPanel() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const ownerNames = useDiscordUserNames(servidores.map((servidor) => servidor.proprietario_discord_id));
 
   const fetchData = async () => {
     try {
@@ -273,7 +275,10 @@ export function SuperadminPanel() {
                   Servidor
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-heading text-parchment-300">
-                  Guild ID
+                  Servidor Discord
+                </th>
+                <th className="px-4 py-3 text-left text-sm font-heading text-parchment-300">
+                  Proprietario
                 </th>
                 <th className="px-4 py-3 text-center text-sm font-heading text-parchment-300">
                   Empresas
@@ -305,9 +310,22 @@ export function SuperadminPanel() {
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <code className="text-xs bg-leather-800 px-2 py-1 rounded text-parchment-400">
-                      {servidor.guild_id}
-                    </code>
+                    <div className="flex flex-col">
+                      <span className="text-sm text-parchment-200">{servidor.nome}</span>
+                      <code className="text-xs bg-leather-800 px-2 py-1 rounded text-parchment-400 w-fit">
+                        ID: {servidor.guild_id}
+                      </code>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-col">
+                      <span className="text-sm text-parchment-200">
+                        {ownerNames[servidor.proprietario_discord_id] || 'Sem nome cadastrado'}
+                      </span>
+                      <code className="text-xs text-parchment-500 font-mono">
+                        ID: {servidor.proprietario_discord_id}
+                      </code>
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-center">
                     <span className="text-parchment-200">{servidor._count?.empresas || 0}</span>
@@ -363,7 +381,7 @@ export function SuperadminPanel() {
               ))}
               {servidores.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-parchment-500">
+                  <td colSpan={9} className="px-4 py-8 text-center text-parchment-500">
                     Nenhum servidor registrado ainda.
                   </td>
                 </tr>

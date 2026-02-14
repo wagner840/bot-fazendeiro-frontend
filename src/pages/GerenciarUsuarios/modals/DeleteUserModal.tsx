@@ -6,6 +6,7 @@ interface DeleteUserModalProps {
   isOpen: boolean;
   onClose: () => void;
   selectedUser: UserFrontend | null;
+  userDisplayName: string | null;
   onDeleteUser: () => Promise<void>;
 }
 
@@ -13,6 +14,7 @@ export function DeleteUserModal({
   isOpen,
   onClose,
   selectedUser,
+  userDisplayName,
   onDeleteUser,
 }: DeleteUserModalProps) {
   return (
@@ -26,7 +28,12 @@ export function DeleteUserModal({
 
         <p className="text-parchment-400 mb-6">
           Tem certeza que deseja remover o acesso do usuário{' '}
-          <span className="text-gold-500 font-mono">{selectedUser?.discord_id}</span>?
+          <span className="text-gold-500">{userDisplayName || 'Sem nome cadastrado'}</span>?
+          {selectedUser?.discord_id && (
+            <span className="block text-parchment-500 font-mono text-xs mt-1">
+              ID: {selectedUser.discord_id}
+            </span>
+          )}
           <br />
           Esta ação não pode ser desfeita.
         </p>

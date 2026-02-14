@@ -2,38 +2,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { AlertTriangle, CreditCard, LogOut, ChevronDown, Check, Clock, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-
-interface ServerName {
-  guild_id: string;
-  nome: string;
-}
-
-function useServerNames(guildIds: string[]) {
-  const [names, setNames] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    if (guildIds.length === 0) return;
-
-    async function fetchNames() {
-      const { data } = await supabase
-        .from('servidores')
-        .select('guild_id, nome')
-        .in('guild_id', guildIds);
-
-      if (data) {
-        const map: Record<string, string> = {};
-        (data as ServerName[]).forEach((s) => { map[s.guild_id] = s.nome; });
-        setNames(map);
-      }
-    }
-
-    fetchNames();
-  }, [guildIds.join(',')]);
-
-  return names;
-}
+import { useState } from 'react';
+import { useServerNames } from '../hooks/useEntityNames';
 
 export function AssinaturaExpirada() {
   const { signOut, userFrontend, userFrontends, switchGuild, hasActiveSubscription, isTrialExpired, subscription, activateTrial } = useAuth();
@@ -48,7 +18,7 @@ export function AssinaturaExpirada() {
   const serverNames = useServerNames(guildIds);
 
   const currentGuildName = userFrontend?.guild_id
-    ? serverNames[userFrontend.guild_id] || 'Carregando...'
+    ? serverNames[userFrontend.guild_id] || 'Sem nome cadastrado'
     : 'Carregando...';
 
   // Active sub — redirect to dashboard
@@ -147,8 +117,15 @@ export function AssinaturaExpirada() {
                     }}
                     className="w-full text-left px-4 py-3 hover:bg-leather-700 text-parchment-300 border-b border-leather-700/50 last:border-0 flex items-center justify-between"
                   >
-                    <span className="truncate">
-                      {uf.guild_id ? serverNames[uf.guild_id] || uf.guild_id : 'Sem servidor'}
+                    <span className="min-w-0 flex flex-col">
+                      <span className="truncate">
+                        {uf.guild_id ? serverNames[uf.guild_id] || 'Sem nome cadastrado' : 'Sem servidor'}
+                      </span>
+                      {uf.guild_id && (
+                        <span className="text-xs text-parchment-500 font-mono truncate">
+                          ID: {uf.guild_id}
+                        </span>
+                      )}
                     </span>
                     {uf.id === userFrontend?.id && <Check size={16} className="text-gold-500 flex-shrink-0 ml-2" />}
                   </button>
