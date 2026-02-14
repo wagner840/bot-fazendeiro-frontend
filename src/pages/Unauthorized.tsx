@@ -22,24 +22,18 @@ export function Unauthorized() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-leather-900/50 border border-leather-700 rounded-western p-8 max-w-lg w-full text-center"
+        className="bg-leather-900/50 border border-leather-700 rounded-western p-8 max-w-xl w-full text-center"
       >
-        {/* Icon */}
         <div className="w-20 h-20 rounded-full bg-rust-900/30 flex items-center justify-center mx-auto mb-6">
           <ShieldX className="w-10 h-10 text-rust-500" />
         </div>
 
-        {/* Title */}
-        <h1 className="font-display text-3xl text-rust-500 mb-2">
-          Acesso Negado
-        </h1>
+        <h1 className="font-display text-3xl text-rust-500 mb-2">Acesso Negado</h1>
 
-        {/* Message */}
         <p className="text-parchment-400 mb-6">
-          Voc√™ n√£o tem permiss√£o para acessar este sistema.
+          VocÍ ainda n„o tem permiss„o para acessar o painel.
         </p>
 
-        {/* User info */}
         {user && (
           <div className="bg-leather-800/50 rounded-western p-4 mb-6">
             <p className="text-parchment-500 text-sm mb-1">Logado como:</p>
@@ -53,7 +47,7 @@ export function Unauthorized() {
               )}
               <div className="text-left">
                 <p className="text-parchment-200 font-heading">
-                  {user.user_metadata?.full_name || user.user_metadata?.name || 'Usu√°rio Discord'}
+                  {user.user_metadata?.full_name || user.user_metadata?.name || 'Usu·rio Discord'}
                 </p>
                 <p className="text-parchment-500 text-xs">
                   {user.email || `ID: ${user.user_metadata?.provider_id}`}
@@ -63,33 +57,28 @@ export function Unauthorized() {
           </div>
         )}
 
-        {/* Reasons */}
         <div className="text-left bg-leather-800/30 rounded-western p-4 mb-6">
-          <p className="text-parchment-400 text-sm font-heading mb-2">
-            Poss√≠veis raz√µes:
-          </p>
-          <ul className="text-parchment-500 text-sm space-y-1">
-            <li className="flex items-start gap-2">
-              <span className="text-gold-500">‚Ä¢</span>
-              <span>Sua conta Discord n√£o foi cadastrada pelo administrador do servidor</span>
+          <p className="text-parchment-300 text-sm font-heading mb-2">Como liberar acesso no bot:</p>
+          <ol className="text-parchment-400 text-sm space-y-1 list-decimal pl-4">
+            <li>
+              No Discord, execute <code className="font-mono text-gold-400">/configurar</code> (ou{' '}
+              <code className="font-mono text-gold-400">!configurar</code>) para iniciar o servidor.
             </li>
-            <li className="flex items-start gap-2">
-              <span className="text-gold-500">‚Ä¢</span>
-              <span>Seu acesso foi desativado</span>
+            <li>Escolha a base REDM deste servidor e finalize a empresa inicial.</li>
+            <li>
+              Garanta seu usu·rio como admin em <code className="font-mono text-gold-400">usuarios_frontend</code>{' '}
+              para este guild.
             </li>
-            <li className="flex items-start gap-2">
-              <span className="text-gold-500">‚Ä¢</span>
-              <span>Voc√™ n√£o pertence a nenhum servidor com acesso a este sistema</span>
+            <li>
+              Se alterou dados no banco, rode <code className="font-mono text-gold-400">!limparcache</code> no bot.
             </li>
-          </ul>
+          </ol>
         </div>
 
-        {/* Contact */}
         <p className="text-parchment-500 text-sm mb-6">
-          Entre em contato com o administrador do seu servidor Discord para solicitar acesso.
+          Se o problema continuar, peÁa ao administrador para validar assinatura e permissıes desse servidor.
         </p>
 
-        {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Button
             variant="outline"
