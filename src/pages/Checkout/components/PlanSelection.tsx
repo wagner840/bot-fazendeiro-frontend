@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { QrCode, Loader2 } from 'lucide-react';
+import { QrCode, Loader2, BadgeCheck } from 'lucide-react';
 import InputMask from 'inputmask';
 import type { Plano, PixData } from '../types';
 
@@ -39,45 +39,53 @@ export function PlanSelection({
   const isFormValid = cpf.replace(/\D/g, '').length === 11 && email.includes('@');
 
   return (
-    <motion.div
+    <motion.section
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
-      className="bg-leather-900/50 border border-leather-700 rounded-western p-6"
+      className="western-card p-5 sm:p-6"
     >
-      <h2 className="font-heading text-xl text-parchment-100 mb-6">Selecione o Plano</h2>
+      <h2 className="font-heading text-xl text-parchment-100 mb-1">Escolha seu plano</h2>
+      <p className="text-sm text-parchment-500 mb-5">O valor mensal aparece em destaque para facilitar comparacao.</p>
 
-      <div className="space-y-4">
-        {planos.map((plano) => (
-          <button
-            key={plano.id}
-            onClick={() => {
-              setSelectedPlano(plano);
-            }}
-            disabled={!!pixData}
-            className={`w-full p-4 rounded-western border text-left transition-all ${
-              selectedPlano?.id === plano.id
-                ? 'border-gold-500 bg-gold-500/10'
-                : 'border-leather-600 hover:border-leather-500'
-            } ${pixData ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="font-heading text-parchment-100">{plano.nome}</h3>
-                <p className="text-parchment-500 text-sm">{plano.duracao_dias} dias de acesso</p>
+      <div className="space-y-3">
+        {planos.map((plano) => {
+          const monthly = plano.preco / Math.max(plano.duracao_dias / 30, 1);
+          return (
+            <button
+              key={plano.id}
+              onClick={() => setSelectedPlano(plano)}
+              disabled={!!pixData}
+              className={`w-full p-4 rounded-western border text-left transition-all ${
+                selectedPlano?.id === plano.id
+                  ? 'border-gold-500 bg-gold-500/10'
+                  : 'border-leather-600 hover:border-leather-500'
+              } ${pixData ? 'opacity-60 cursor-not-allowed' : ''}`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="font-heading text-parchment-100">{plano.nome}</h3>
+                  <p className="text-parchment-500 text-sm">{plano.duracao_dias} dias de acesso</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-gold-500">R$ {plano.preco.toFixed(2).replace('.', ',')}</p>
+                  <p className="text-xs text-parchment-500">~ R$ {monthly.toFixed(2).replace('.', ',')}/mes</p>
+                </div>
               </div>
-              <span className="text-2xl font-bold text-gold-500">
-                R$ {plano.preco.toFixed(2).replace('.', ',')}
-              </span>
-            </div>
-          </button>
-        ))}
+            </button>
+          );
+        })}
       </div>
 
       {selectedPlano && !pixData && (
         <div className="mt-6 space-y-4">
+          <div className="p-3 rounded-western border border-green-700/40 bg-green-900/10 flex items-center gap-2 text-sm text-green-300">
+            <BadgeCheck className="w-4 h-4" />
+            Plano selecionado: <strong>{selectedPlano.nome}</strong>
+          </div>
+
           <div>
             <label htmlFor="email" className="block text-parchment-400 text-sm mb-2">
-              E-mail (Para comprovante)
+              E-mail de faturamento
             </label>
             <input
               id="email"
@@ -91,7 +99,7 @@ export function PlanSelection({
 
           <div>
             <label htmlFor="cpf" className="block text-parchment-400 text-sm mb-2">
-              CPF do Pagador (Obrigatório para PIX)
+              CPF do pagador
             </label>
             <input
               id="cpf"
@@ -99,6 +107,7 @@ export function PlanSelection({
               className="w-full bg-leather-800 border border-leather-600 rounded-western p-3 text-parchment-100 placeholder-leather-500 focus:border-gold-500 focus:outline-none transition-colors"
               placeholder="000.000.000-00"
               onChange={(e) => setCpf(e.target.value)}
+              value={cpf}
             />
           </div>
 
@@ -115,12 +124,12 @@ export function PlanSelection({
             ) : (
               <>
                 <QrCode className="w-5 h-5" />
-                Gerar QR Code PIX
+                Gerar pagamento PIX
               </>
             )}
           </button>
         </div>
       )}
-    </motion.div>
+    </motion.section>
   );
 }

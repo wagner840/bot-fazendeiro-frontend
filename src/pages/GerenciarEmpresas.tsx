@@ -1,20 +1,14 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Building2,
-  Search,
-  Check,
-  AlertTriangle,
-  X,
-} from 'lucide-react';
+import { Building2, Search, Check, AlertTriangle, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
-import { Card, CardContent, Button, Input, Badge } from '../components/ui';
+import { Card, CardContent, Button, Input, Badge, SectionHeaderAction } from '../components/ui';
 import { cn } from '../lib/utils';
-import { BUSINESS_ICONS } from '../lib/types';
 import type { Empresa } from '../lib/types';
+import { getBaseScenarioLabel, getBusinessIcon } from '../lib/businessIcons';
 
 export function GerenciarEmpresas() {
   usePageTitle('Minhas Empresas');
@@ -26,7 +20,6 @@ export function GerenciarEmpresas() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Fetch companies
   const fetchEmpresas = async () => {
     if (!userFrontend?.guild_id) return;
 
@@ -58,10 +51,10 @@ export function GerenciarEmpresas() {
     setTimeout(() => setSuccess(null), 3000);
   };
 
-  // Filter companies
-  const filteredEmpresas = empresas.filter(emp =>
-    emp.nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    emp.tipo_empresa?.nome.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredEmpresas = empresas.filter(
+    (emp) =>
+      emp.nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      emp.tipo_empresa?.nome.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (!isAdmin) {
@@ -77,27 +70,17 @@ export function GerenciarEmpresas() {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="space-y-6"
-    >
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="font-display text-3xl text-gold-500">Minhas Empresas</h1>
-          <p className="text-parchment-400 mt-1">
-            Gerencie as empresas deste servidor
-          </p>
-        </div>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      <SectionHeaderAction
+        title="Minhas Empresas"
+        subtitle="Gerencie as empresas deste servidor"
+        action={
+          <div className="p-2 bg-leather-800/30 rounded text-xs text-parchment-500 w-full sm:w-auto">
+            Novas empresas devem ser criadas via Bot (!novaempresa)
+          </div>
+        }
+      />
 
-        {/* Create button usually handled by bot, but could be here */}
-        <div className="p-2 bg-leather-800/30 rounded text-xs text-parchment-500">
-          Novas empresas devem ser criadas via Bot (!novaempresa)
-        </div>
-      </div>
-
-      {/* Alerts */}
       <AnimatePresence>
         {error && (
           <motion.div
@@ -108,7 +91,7 @@ export function GerenciarEmpresas() {
           >
             <AlertTriangle className="w-5 h-5" />
             {error}
-            <button onClick={() => setError(null)} className="ml-auto">
+            <button onClick={() => setError(null)} className="ml-auto" aria-label="Fechar alerta">
               <X className="w-4 h-4" />
             </button>
           </motion.div>
@@ -127,7 +110,6 @@ export function GerenciarEmpresas() {
         )}
       </AnimatePresence>
 
-      {/* Search */}
       <Card>
         <CardContent className="p-4">
           <div className="relative">
@@ -142,66 +124,56 @@ export function GerenciarEmpresas() {
         </CardContent>
       </Card>
 
-      {/* Grid */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-           {[1, 2, 3].map(i => (
-             <Card key={i} className="h-48 animate-pulse bg-leather-800/20">
-                <CardContent className="h-full"><></></CardContent>
-             </Card>
-           ))}
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="h-48 animate-pulse bg-leather-800/20">
+              <CardContent className="h-full"><></></CardContent>
+            </Card>
+          ))}
         </div>
       ) : filteredEmpresas.length === 0 ? (
         <div className="text-center py-12 text-parchment-500">
-           <Building2 className="w-12 h-12 mx-auto mb-3 opacity-50" />
-           <p>Nenhuma empresa encontrada.</p>
+          <Building2 className="w-12 h-12 mx-auto mb-3 opacity-50" />
+          <p>Nenhuma empresa encontrada.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredEmpresas.map((empresa) => {
             const isSelected = selectedEmpresa?.id === empresa.id;
-            const icon = empresa.tipo_empresa?.codigo 
-              ? BUSINESS_ICONS[empresa.tipo_empresa.codigo] || '🏢'
-              : '🏢';
+            const BusinessIcon = getBusinessIcon(empresa.tipo_empresa?.codigo);
 
             return (
               <motion.div
                 key={empresa.id}
                 layoutId={`empresa-${empresa.id}`}
-                className={cn(
-                  "relative group",
-                  isSelected && "ring-2 ring-gold-500 rounded-western"
-                )}
+                className={cn('relative group', isSelected && 'ring-2 ring-gold-500 rounded-western')}
               >
                 <Card className="h-full hover:bg-leather-800/40 transition-colors">
                   <CardContent className="p-6 space-y-4">
                     <div className="flex items-start justify-between">
-                      <div className="w-12 h-12 rounded-western bg-leather-700 flex items-center justify-center text-2xl shadow-inner">
-                        {icon}
+                      <div className="w-12 h-12 rounded-western bg-leather-700 flex items-center justify-center shadow-inner">
+                        <BusinessIcon className="w-6 h-6 text-gold-500" />
                       </div>
-                      <Badge variant={empresa.ativo ? 'gold' : 'default'}>
-                        {empresa.ativo ? 'Ativa' : 'Inativa'}
-                      </Badge>
+                      <Badge variant={empresa.ativo ? 'gold' : 'default'}>{empresa.ativo ? 'Ativa' : 'Inativa'}</Badge>
                     </div>
 
                     <div>
-                      <h3 className="font-heading text-xl text-parchment-100 mb-1">
-                        {empresa.nome}
-                      </h3>
+                      <h3 className="font-heading text-xl text-parchment-100 mb-1">{empresa.nome}</h3>
                       <p className="text-sm text-parchment-500">
-                        {empresa.tipo_empresa?.nome} • {empresa.tipo_empresa?.base_redm_id === 2 ? '🐉 Valiria' : '🏙️ Downtown'}
+                        {empresa.tipo_empresa?.nome} � {getBaseScenarioLabel(empresa.tipo_empresa?.base_redm_id)}
                       </p>
                     </div>
 
                     <div className="pt-4 border-t border-leather-700/50 flex gap-2">
-                       <Button 
-                         variant={isSelected ? "secondary" : "primary"}
-                         className="w-full"
-                         onClick={() => handleSelectEmpresa(empresa)}
-                         disabled={isSelected}
-                       >
-                         {isSelected ? 'Selecionada' : 'Gerenciar'}
-                       </Button>
+                      <Button
+                        variant={isSelected ? 'secondary' : 'primary'}
+                        className="w-full"
+                        onClick={() => handleSelectEmpresa(empresa)}
+                        disabled={isSelected}
+                      >
+                        {isSelected ? 'Selecionada' : 'Gerenciar'}
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>

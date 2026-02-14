@@ -6,3 +6,7 @@ export { Button } from './Button';
 export { Input } from './Input';
 export { Badge, StatusStamp, Progress, Avatar } from './Badge';
 export { EmptyState } from './EmptyState';
+export { MetricTile } from './MetricTile';
+export { SectionHeaderAction } from './SectionHeaderAction';
+export { DataCardMobile } from './DataCardMobile';
+export { ContextMenuActions } from './ContextMenuActions';

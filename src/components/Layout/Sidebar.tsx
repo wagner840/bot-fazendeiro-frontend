@@ -10,8 +10,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Wheat,
-  UserCog,
-  Building2,
   Shield,
   Warehouse,
   FileSearch,
@@ -19,7 +17,7 @@ import {
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
 import { cn } from '../../lib/utils';
-import { BUSINESS_ICONS } from '../../lib/types';
+import { getBusinessIcon } from '../../lib/businessIcons';
 
 interface NavItemProps {
   to: string;
@@ -67,9 +65,7 @@ export function Sidebar() {
   } = useApp();
   const { isAdmin, isSuperadmin } = useAuth();
 
-  const businessIcon = selectedEmpresa?.tipo_empresa?.codigo
-    ? BUSINESS_ICONS[selectedEmpresa.tipo_empresa.codigo] || '🏢'
-    : '🏢';
+  const BusinessIcon = getBusinessIcon(selectedEmpresa?.tipo_empresa?.codigo);
 
   const navItems = [
     { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
@@ -80,8 +76,6 @@ export function Sidebar() {
     { to: '/dashboard/financeiro', icon: <DollarSign size={20} />, label: 'Financeiro' },
     ...(isAdmin ? [
       { to: '/dashboard/auditoria', icon: <FileSearch size={20} />, label: 'Auditoria' },
-      { to: '/dashboard/empresas', icon: <Building2 size={20} />, label: 'Minhas Empresas' },
-      { to: '/dashboard/usuarios', icon: <UserCog size={20} />, label: 'Gerenciar Usuários' },
       { to: '/dashboard/configuracoes', icon: <Settings size={20} />, label: 'Configurações' },
     ] : []),
     ...(isSuperadmin ? [
@@ -144,9 +138,10 @@ export function Sidebar() {
           </div>
           
           {/* Mobile Close Button */}
-          <button 
+          <button
             className="md:hidden text-parchment-400 hover:text-parchment-200"
             onClick={() => setMobileMenuOpen(false)}
+            aria-label="Fechar menu lateral"
           >
             <ChevronLeft size={24} />
           </button>
@@ -162,7 +157,7 @@ export function Sidebar() {
               'flex items-center gap-3 p-3 rounded-western bg-leather-800/50',
               (sidebarCollapsed && !mobileMenuOpen) && 'justify-center p-2'
             )}>
-              <span className="text-2xl">{businessIcon}</span>
+              <BusinessIcon className="w-6 h-6 text-gold-500 shrink-0" />
               {(!sidebarCollapsed || mobileMenuOpen) && (
                 <div className="overflow-hidden flex-1 min-w-0">
                   <p className="font-heading text-sm text-parchment-100 truncate">
@@ -195,6 +190,7 @@ export function Sidebar() {
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
           className="hidden md:flex absolute -right-3 top-20 w-6 h-6 rounded-full bg-leather-800 border border-leather-600/50 items-center justify-center hover:bg-leather-700 transition-colors shadow-western"
+          aria-label={sidebarCollapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'}
         >
           {sidebarCollapsed ? (
             <ChevronRight size={14} className="text-gold-500" />

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, Loader2, AlertCircle, ExternalLink } from 'lucide-react';
+import { Sparkles, Loader2, AlertCircle, ExternalLink, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 
 const BOT_INVITE_URL =
@@ -11,17 +11,14 @@ export function TrialBanner() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Hide if already has active subscription or is a trial that's still active
   if (subscription?.ativa) return null;
 
-  // Hide if user already used trial (tipo === 'trial' means it was used before)
   const alreadyUsedTrial = subscription?.tipo === 'trial';
 
   const handleActivateTrial = async () => {
     const guildId = userFrontend?.guild_id;
 
     if (!guildId || guildId === 'pending_activation') {
-      // No guild selected — redirect to bot install first
       window.open(BOT_INVITE_URL, '_blank');
       return;
     }
@@ -32,9 +29,7 @@ export function TrialBanner() {
     const result = await activateTrial(guildId);
 
     if (result.success) {
-      // Trial activated — redirect to bot install page
       window.open(BOT_INVITE_URL, '_blank');
-      // Reload to refresh subscription state
       window.location.href = '/dashboard';
     } else {
       setError(result.message);
@@ -48,12 +43,12 @@ export function TrialBanner() {
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-leather-800/40 border border-leather-700/50 rounded-western p-4 mb-6"
+        className="bg-leather-800/40 border border-leather-700/50 rounded-western p-4"
       >
         <div className="flex items-center gap-3">
           <AlertCircle className="w-5 h-5 text-parchment-500 flex-shrink-0" />
           <p className="text-parchment-400 text-sm">
-            Período de teste já utilizado. Escolha um plano abaixo para continuar.
+            Periodo de teste ja utilizado. Escolha um plano abaixo para continuar.
           </p>
         </div>
       </motion.div>
@@ -64,7 +59,7 @@ export function TrialBanner() {
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-gradient-to-r from-gold-500/10 to-whiskey-500/10 border border-gold-500/30 rounded-western p-5 sm:p-6 mb-6"
+      className="bg-gradient-to-r from-gold-500/10 to-whiskey-500/10 border border-gold-500/30 rounded-western p-5 sm:p-6"
     >
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -72,12 +67,8 @@ export function TrialBanner() {
             <Sparkles className="w-5 h-5 text-gold-400" />
           </div>
           <div>
-            <h3 className="font-heading text-parchment-100 text-base">
-              Teste Grátis por 3 Dias
-            </h3>
-            <p className="text-parchment-400 text-sm mt-0.5">
-              Experimente todas as funcionalidades sem compromisso
-            </p>
+            <h3 className="font-heading text-parchment-100 text-base">Teste gratis por 3 dias</h3>
+            <p className="text-parchment-400 text-sm mt-0.5">Experimente todas as funcionalidades sem compromisso</p>
           </div>
         </div>
 
@@ -94,7 +85,7 @@ export function TrialBanner() {
           ) : (
             <>
               <Sparkles className="w-4 h-4" />
-              Ativar Teste Grátis
+              Ativar teste gratis
               <ExternalLink className="w-3 h-3" />
             </>
           )}
@@ -108,10 +99,10 @@ export function TrialBanner() {
         </p>
       )}
 
-      <div className="mt-3 flex items-center gap-4 text-xs text-parchment-500">
-        <span>✓ Sem cartão de crédito</span>
-        <span>✓ Sem compromisso</span>
-        <span>✓ Acesso completo</span>
+      <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-parchment-500">
+        <span className="inline-flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5 text-green-400" />Sem cartao de credito</span>
+        <span className="inline-flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5 text-green-400" />Sem compromisso</span>
+        <span className="inline-flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5 text-green-400" />Acesso completo</span>
       </div>
     </motion.div>
   );
