@@ -9,7 +9,7 @@ export interface PixData {
   qrcode: string;
   copiaCola: string;
   expiracao: Date;
-  paymentId: number;
+  paymentId: string;
 }
 
 export type PaymentStatus = 'pending' | 'paid' | 'expired';
