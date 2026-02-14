@@ -3,6 +3,7 @@ import { Search, Users, History, Eye, CreditCard, Calendar } from 'lucide-react'
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
 import { usePageTitle } from '../../hooks/usePageTitle';
+import { useDiscordUserNames } from '../../hooks/useEntityNames';
 import {
   Card,
   CardHeader,
@@ -72,6 +73,9 @@ export function Auditoria() {
     handlePagarEstoque,
     getFuncionarioNome,
   } = useAuditoria();
+  const discordUserNames = useDiscordUserNames(
+    auditoriaFuncionarios.map((funcionario) => funcionario.discord_id)
+  );
 
   // Columns for resumo tab
   const resumoColumns = [
@@ -81,10 +85,12 @@ export function Auditoria() {
       sortable: true,
       render: (row: AuditoriaFuncionario) => (
         <div className="flex items-center gap-3">
-          <Avatar name={row.nome} size="sm" />
+          <Avatar name={discordUserNames[row.discord_id] || row.nome} size="sm" />
           <div>
-            <p className="font-heading text-parchment-100">{row.nome}</p>
-            <p className="text-xs text-parchment-500">{row.discord_id}</p>
+            <p className="font-heading text-parchment-100">
+              {discordUserNames[row.discord_id] || row.nome || 'Sem nome cadastrado'}
+            </p>
+            <p className="text-xs text-parchment-500">ID: {row.discord_id}</p>
           </div>
         </div>
       ),
@@ -245,8 +251,8 @@ export function Auditoria() {
                       >
                         <option value="">Todos funcionarios</option>
                         {auditoriaFuncionarios.map((f) => (
-                          <option key={f.funcionario_id} value={f.funcionario_id}>
-                            {f.nome}
+                        <option key={f.funcionario_id} value={f.funcionario_id}>
+                            {discordUserNames[f.discord_id] || f.nome || 'Sem nome cadastrado'}
                           </option>
                         ))}
                       </select>

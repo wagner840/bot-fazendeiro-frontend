@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Shield, Plus, Trash2, Search, AlertCircle, CheckCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { useServerNames } from '../hooks/useEntityNames';
 
 interface Tester {
   id: number;
@@ -85,9 +86,10 @@ export function SuperAdminTesters() {
 
 
   const [searchTerm, setSearchTerm] = useState('');
+  const serverNames = useServerNames(testers.map((tester) => tester.guild_id));
 
   const filteredTesters = testers.filter(t => 
-    t.nome?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (serverNames[t.guild_id] || t.nome || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
     t.guild_id?.includes(searchTerm)
   );
 
@@ -163,9 +165,11 @@ export function SuperAdminTesters() {
                 >
                   <div className="flex justify-between items-start mb-3">
                     <div>
-                      <h3 className="font-heading text-lg text-parchment-100">{tester.nome}</h3>
+                      <h3 className="font-heading text-lg text-parchment-100">
+                        {serverNames[tester.guild_id] || tester.nome || 'Sem nome cadastrado'}
+                      </h3>
                       <p className="font-mono text-xs text-parchment-500 bg-leather-950/50 px-2 py-1 rounded mt-1 inline-block border border-leather-800">
-                        {tester.guild_id}
+                        ID: {tester.guild_id}
                       </p>
                     </div>
                     <span className={`px-2 py-1 text-xs font-bold rounded-full border ${tester.ativo ? 'bg-emerald-900/20 text-emerald-400 border-emerald-500/30' : 'bg-rust-900/20 text-rust-400 border-rust-500/30'}`}>
@@ -197,7 +201,7 @@ export function SuperAdminTesters() {
               <table className="w-full">
                 <thead className="bg-leather-950/40 border-b border-leather-700/50">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-heading text-parchment-400 uppercase tracking-wider">Guild</th>
+                    <th className="px-6 py-4 text-left text-xs font-heading text-parchment-400 uppercase tracking-wider">Servidor</th>
                     <th className="px-6 py-4 text-left text-xs font-heading text-parchment-400 uppercase tracking-wider">Motivo</th>
                     <th className="px-6 py-4 text-left text-xs font-heading text-parchment-400 uppercase tracking-wider">Status</th>
                     <th className="px-6 py-4 text-left text-xs font-heading text-parchment-400 uppercase tracking-wider">Criado em</th>
@@ -219,8 +223,12 @@ export function SuperAdminTesters() {
                         <tr key={tester.id} className="hover:bg-leather-800/30 transition-colors group">
                           <td className="px-6 py-4">
                             <div className="flex flex-col">
-                              <span className="text-sm font-medium text-parchment-100">{tester.nome}</span>
-                              <code className="text-xs text-parchment-500 font-mono mt-0.5">{tester.guild_id}</code>
+                              <span className="text-sm font-medium text-parchment-100">
+                                {serverNames[tester.guild_id] || tester.nome || 'Sem nome cadastrado'}
+                              </span>
+                              <code className="text-xs text-parchment-500 font-mono mt-0.5">
+                                ID: {tester.guild_id}
+                              </code>
                             </div>
                           </td>
                           <td className="px-6 py-4">

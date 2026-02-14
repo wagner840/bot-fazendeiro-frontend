@@ -18,6 +18,7 @@ import {
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../hooks/useNotifications';
+import { useServerNames } from '../../hooks/useEntityNames';
 import { cn } from '../../lib/utils';
 import { BUSINESS_ICONS } from '../../lib/types';
 import { NotificationPanel } from './NotificationPanel';
@@ -40,6 +41,7 @@ export function Header() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const mobileSearchRef = useRef<HTMLInputElement>(null);
+  const serverNames = useServerNames(userFrontends.map((uf) => uf.guild_id));
 
   const { activities, unreadCount, isLoading: isLoadingNotifications, markAsRead } = useNotifications(
     selectedEmpresa?.id ?? null
@@ -378,7 +380,14 @@ export function Header() {
                                           userFrontend?.guild_id === uf.guild_id ? "text-gold-500 font-medium" : "text-parchment-300"
                                       )}
                                   >
-                                      <span className="text-sm truncate">{uf.guild_id}</span>
+                                      <span className="min-w-0 flex flex-col">
+                                        <span className="text-sm truncate">
+                                          {serverNames[uf.guild_id] || 'Sem nome cadastrado'}
+                                        </span>
+                                        <span className="text-xs text-parchment-500 font-mono truncate">
+                                          ID: {uf.guild_id}
+                                        </span>
+                                      </span>
                                       {userFrontend?.guild_id === uf.guild_id && <Check size={14} />}
                                   </button>
                               )

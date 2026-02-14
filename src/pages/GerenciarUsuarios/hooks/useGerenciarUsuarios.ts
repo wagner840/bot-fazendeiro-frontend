@@ -67,6 +67,7 @@ export function useGerenciarUsuarios(): UseGerenciarUsuariosReturn {
     return users.filter(
       (user) =>
         user.discord_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (user.nome || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         user.role.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [users, searchQuery]);

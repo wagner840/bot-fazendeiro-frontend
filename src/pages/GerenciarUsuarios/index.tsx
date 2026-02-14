@@ -3,6 +3,7 @@ import { UserPlus, Search, Shield, AlertTriangle, Check, X } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext';
 import { Card, CardContent, Button, Input } from '../../components/ui';
 import { usePageTitle } from '../../hooks/usePageTitle';
+import { useDiscordUserNames } from '../../hooks/useEntityNames';
 
 import { useGerenciarUsuarios } from './hooks/useGerenciarUsuarios';
 import { UsersTable } from './components/UsersTable';
@@ -38,6 +39,7 @@ export function GerenciarUsuarios() {
     setError,
     success,
   } = useGerenciarUsuarios();
+  const userNames = useDiscordUserNames(filteredUsers.map((user) => user.discord_id));
 
   if (!isAdmin) {
     return (
@@ -109,7 +111,7 @@ export function GerenciarUsuarios() {
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar por Discord ID ou permissão..."
+              placeholder="Buscar por nome, Discord ID ou permissão..."
               className="pl-10"
             />
           </div>
@@ -119,6 +121,7 @@ export function GerenciarUsuarios() {
       {/* Users Table */}
       <UsersTable
         users={filteredUsers}
+        userNames={userNames}
         isLoading={isLoading}
         currentUserDiscordId={userFrontend?.discord_id}
         isSuperadmin={isSuperadmin}
@@ -148,6 +151,9 @@ export function GerenciarUsuarios() {
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
         selectedUser={selectedUser}
+        userDisplayName={
+          selectedUser ? userNames[selectedUser.discord_id] || selectedUser.nome || null : null
+        }
         onDeleteUser={handleDeleteUser}
       />
     </motion.div>
