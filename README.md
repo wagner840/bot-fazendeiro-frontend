@@ -1,73 +1,58 @@
-# React + TypeScript + Vite
+# Frontend - Bot Fazendeiro
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Painel web React/TypeScript para operação dos tenants do Bot Fazendeiro.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- React 19 + TypeScript + Vite
+- Tailwind CSS
+- Supabase JS
+- TanStack Query
 
-## React Compiler
+## Arquitetura funcional
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. Login com Discord via Supabase Auth.
+2. `AuthProvider` resolve usuário + vínculos em `usuarios_frontend`.
+3. Rotas protegidas exigem autenticação e role (`funcionario/admin/superadmin`).
+4. Checkout usa API backend com bearer token:
+   - `POST /api/pix/create`
+   - `GET /api/pix/status/{payment_id}`
 
-## Expanding the ESLint configuration
+## Variáveis de ambiente
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```env
+VITE_SUPABASE_URL=
+VITE_SUPABASE_KEY=
+VITE_API_URL=http://localhost:8000
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Scripts
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
+npm run test
+npm run build
+npm run preview
 ```
+
+## Deploy (Coolify)
+
+- Build usa `frontend/Dockerfile`.
+- Serviço estático servido por Nginx (`frontend/nginx.conf`).
+- Healthcheck: `GET /health`.
+- CI/CD: `frontend/.github/workflows/frontend-ci-cd.yml` com deploy via `COOLIFY_FRONTEND_DEPLOY_HOOK`.
+
+## Segurança e contratos
+
+- Checkout não consulta status sensível direto no Supabase.
+- API de pagamento exige JWT do usuário.
+- Tenant authorization ocorre no backend por `guild_id` e `discord_id`.
+
+## Limites conhecidos
+
+- Suite de testes frontend ainda pequena (smoke).
+- Recomendada expansão para testes de fluxo:
+  - login/callback
+  - checkout completo
+  - rota protegida por role
