@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+ï»¿import { motion } from 'framer-motion';
 import { ShieldX, ArrowLeft, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -30,9 +30,7 @@ export function Unauthorized() {
 
         <h1 className="font-display text-3xl text-rust-500 mb-2">Acesso Negado</h1>
 
-        <p className="text-parchment-400 mb-6">
-          Você ainda não tem permissão para acessar o painel.
-        </p>
+        <p className="text-parchment-400 mb-6">{`Voc\u00ea ainda n\u00e3o tem permiss\u00e3o para acessar o painel.`}</p>
 
         {user && (
           <div className="bg-leather-800/50 rounded-western p-4 mb-6">
@@ -47,7 +45,7 @@ export function Unauthorized() {
               )}
               <div className="text-left">
                 <p className="text-parchment-200 font-heading">
-                  {user.user_metadata?.full_name || user.user_metadata?.name || 'Usuário Discord'}
+                  {user.user_metadata?.full_name || user.user_metadata?.name || 'Usuario Discord'}
                 </p>
                 <p className="text-parchment-500 text-xs">
                   {user.email || `ID: ${user.user_metadata?.provider_id}`}
@@ -64,27 +62,19 @@ export function Unauthorized() {
               No Discord, execute <code className="font-mono text-gold-400">/configurar</code> (ou{' '}
               <code className="font-mono text-gold-400">!configurar</code>) para iniciar o servidor.
             </li>
-            <li>Escolha a base REDM deste servidor e finalize a empresa inicial.</li>
+            <li>{`Escolha a base REDM deste servidor e finalize a empresa inicial.`}</li>
             <li>
-              Garanta seu usuário como admin em <code className="font-mono text-gold-400">usuarios_frontend</code>{' '}
-              para este guild.
-            </li>
-            <li>
-              Se alterou dados no banco, rode <code className="font-mono text-gold-400">!limparcache</code> no bot.
+              {`Pe\u00e7a para um administrador do servidor te liberar acesso no painel web.`}
             </li>
           </ol>
         </div>
 
         <p className="text-parchment-500 text-sm mb-6">
-          Se o problema continuar, peça ao administrador para validar assinatura e permissões desse servidor.
+          {`Se o problema continuar, pe\u00e7a ao administrador para validar assinatura e permiss\u00f5es desse servidor.`}
         </p>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Button
-            variant="outline"
-            onClick={handleBack}
-            className="flex items-center justify-center gap-2"
-          >
+          <Button variant="outline" onClick={handleBack} className="flex items-center justify-center gap-2">
             <ArrowLeft className="w-4 h-4" />
             Voltar
           </Button>
